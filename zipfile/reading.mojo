@@ -21,9 +21,11 @@ def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
 @value
 struct ZipInfo:
     var filename: String
+    var _start_of_header: UInt64
 
     def __init__(out self, header: CentralDirectoryFileHeader):
         self.filename = String(bytes=header.filename)
+        self._start_of_header = UInt64(header.relative_offset_of_local_header)
 
     fn is_dir(self) -> Bool:
         return self.filename.endswith("/")
@@ -64,16 +66,39 @@ struct ZipFile:
     fn close(mut self) raises:
         self.file.close()
 
-    fn infolist(self) raises -> List[ZipInfo]:
-        start = self.file.seek(UInt64(self.end_of_central_directory.offset_of_starting_disk_number))
+    fn open(mut self, name: ZipInfo, mode: String) raises:
+        return self.open(name.filename, mode)
+
+    fn open(mut self, name: String, mode: String) raises:
+        if mode != "r":
+            raise Error("Only read mode is the only mode supported")
+    
+    fn getinfo(mut self, name: String) raises -> ZipInfo:
+        # We need to seek to the start of the header
+        self._start_reading_central_directory_file_headers()
+        while True:
+            header = self._read_next_central_directory_file_header()
+            if header is None:
+                break
+            if String(bytes=header.value().filename) == name:
+                return ZipInfo(header.value())
+        raise Error(String("File ") + name + " not found in zip file")
+
+    fn _start_reading_central_directory_file_headers(mut self) raises:
+        _ = self.file.seek(UInt64(self.end_of_central_directory.offset_of_starting_disk_number))
+
+    fn _read_next_central_directory_file_header(mut self) raises -> Optional[CentralDirectoryFileHeader]:
+        if self.file.seek(0, os.SEEK_CUR) >= self.end_of_central_directory_start:
+            return None
+        return CentralDirectoryFileHeader(self.file)
+
+    fn infolist(mut self) raises -> List[ZipInfo]:
+        self._start_reading_central_directory_file_headers()
 
         result = List[ZipInfo]()
-        while start < self.end_of_central_directory_start:
-            header = CentralDirectoryFileHeader(self.file)
-            result.append(ZipInfo(header))
-            start = self.file.seek(0, os.SEEK_CUR)
+        while True:
+            header = self._read_next_central_directory_file_header()
+            if header is None:
+                break
+            result.append(ZipInfo(header.value()))
         return result
-
-        
-        
-
