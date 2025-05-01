@@ -22,13 +22,33 @@ def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
 struct ZipInfo:
     var filename: String
     var _start_of_header: UInt64
+    var _uncompressed_size: UInt64
 
     def __init__(out self, header: CentralDirectoryFileHeader):
         self.filename = String(bytes=header.filename)
         self._start_of_header = UInt64(header.relative_offset_of_local_header)
+        self._uncompressed_size = UInt64(header.uncompressed_size)
 
     fn is_dir(self) -> Bool:
         return self.filename.endswith("/")
+
+struct ZipFileReader[origin: Origin[mut=True]]:
+    var file: Pointer[FileHandle, origin]
+    var uncompressed_size: UInt64
+    var start: UInt64
+
+    fn __init__(out self, file: Pointer[FileHandle, origin], uncompressed_size: UInt64) raises:
+        self.file = file
+        self.uncompressed_size = uncompressed_size
+        self.start = file[].seek(0, os.SEEK_CUR)
+
+    fn read(mut self, owned size: Int = -1) raises -> List[UInt8]:
+        if size == -1:
+            end = self.start + self.uncompressed_size
+            size = Int(end - self.file[].seek(0, os.SEEK_CUR))
+        
+        return self.file[].read_bytes(size)
+
 
 # Negactive offsets are broken in Mojo for seek
 struct ZipFile:
@@ -66,12 +86,16 @@ struct ZipFile:
     fn close(mut self) raises:
         self.file.close()
 
-    fn open(mut self, name: ZipInfo, mode: String) raises:
-        return self.open(name.filename, mode)
-
-    fn open(mut self, name: String, mode: String) raises:
+    fn open(mut self, name: ZipInfo, mode: String) raises -> ZipFileReader[__origin_of(self.file)]:
         if mode != "r":
             raise Error("Only read mode is the only mode supported")
+        # We need to seek to the start of the header
+        _ = self.file.seek(name._start_of_header)
+        _ = LocalFileHeader(self.file)
+        return ZipFileReader(Pointer(to=self.file), name._uncompressed_size)
+
+    fn open(mut self, name: String, mode: String) raises -> ZipFileReader[__origin_of(self.file)]:
+        return self.open(self.getinfo(name), mode)
     
     fn getinfo(mut self, name: String) raises -> ZipInfo:
         # We need to seek to the start of the header

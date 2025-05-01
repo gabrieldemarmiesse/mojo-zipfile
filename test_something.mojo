@@ -29,6 +29,10 @@ def test_identical_analysis():
     assert_equal(len(open_zip_mojo.end_of_central_directory.zip_file_comment), 0)
 
     assert_equal(len(open_zip_mojo.infolist()), 13)
+    reader = open_zip_mojo.open(open_zip_mojo.infolist()[0], "r")
+    bytes_of_file = reader.read()
+
+    open_zip_mojo.close()
     
 
 
