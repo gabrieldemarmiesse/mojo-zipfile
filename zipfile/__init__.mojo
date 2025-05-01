@@ -1,1 +1,1 @@
-from .reading import is_zipfile
+from .reading import is_zipfile, ZipFile

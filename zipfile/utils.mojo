@@ -5,3 +5,5 @@ fn _lists_are_equal[dtype: DType, //](a: List[Scalar[dtype]], b: List[Scalar[dty
         if a[i] != b[i]:
             return False
     return True
+
+

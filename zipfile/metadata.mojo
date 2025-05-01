@@ -26,7 +26,7 @@ struct LocalFileHeader:
         # We read the fixed size part of the header
         signature = fp.read_bytes(4)
         if not _lists_are_equal(signature, self.SIGNATURE):
-            raise Error("Signature invalid")
+            raise Error("Signature invalid for LocalFileHeader")
         
         self.version_needed_to_extract=read_zip_value[DType.uint16](fp)
         self.general_purpose_bit_flag=read_zip_value[DType.uint16](fp)
@@ -67,7 +67,12 @@ struct CentralDirectoryFileHeader:
         # We read the fixed size part of the header
         signature = fp.read_bytes(4)
         if not _lists_are_equal(signature, self.SIGNATURE):
-            raise Error("Signature invalid")
+            err_msg = String("Signature invalid for CentralDirectoryFileHeader")
+            err_msg += String(" expected: ")
+            err_msg += String(self.SIGNATURE.__str__())
+            err_msg += String(" got: ")
+            err_msg += String(signature.__str__())
+            raise Error(err_msg)
         
         self.version_made_by=read_zip_value[DType.uint16](fp)
         self.version_needed_to_extract=read_zip_value[DType.uint16](fp)
@@ -89,6 +94,7 @@ struct CentralDirectoryFileHeader:
         self.extra_field = fp.read_bytes(Int(extra_field_length))
         self.file_comment = fp.read_bytes(Int(file_comment_length))
 
+
 @value
 struct EndOfCentralDirectoryRecord:
     alias SIGNATURE = List[UInt8](0x50, 0x4b, 5, 6)
@@ -105,7 +111,7 @@ struct EndOfCentralDirectoryRecord:
         # We read the fixed size part of the header
         signature = fp.read_bytes(4)
         if not _lists_are_equal(signature, self.SIGNATURE):
-            raise Error("Signature invalid")
+            raise Error("Signature invalid for EndOfCentralDirectoryRecord")
         
         self.number_of_this_disk=read_zip_value[DType.uint16](fp)
         self.number_of_the_disk_with_the_start_of_the_central_directory=read_zip_value[DType.uint16](fp)
