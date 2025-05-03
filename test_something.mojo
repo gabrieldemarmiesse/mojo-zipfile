@@ -33,11 +33,25 @@ def test_identical_analysis():
     bytes_of_file = reader.read()
 
     open_zip_mojo.close()
+
+
+def test_read_content():
+    Python.add_to_path("./")
+    trying_stuff = Python.import_module("trying_stuff")
+    trying_stuff.dodo()
     
+    open_zip_mojo = zipfile.ZipFile("/tmp/dodo.zip", "r")
+    assert_equal(len(open_zip_mojo.infolist()), 1)
+    hello_file = open_zip_mojo.open("hello.txt", "r")
+    content = hello_file.read()
+    assert_equal(String(bytes=content), "hello world!")
+    open_zip_mojo.close()
+
 
 
 
 def main():
     test_is_zipfile_valid()
     test_identical_analysis()
+    test_read_content()
     print("All tests passed!")
