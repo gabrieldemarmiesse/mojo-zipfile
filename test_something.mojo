@@ -16,21 +16,29 @@ def test_is_zipfile_valid():
     assert_true(zipfile.is_zipfile(String(tmp_zipfile_path)), "File should be a zip file")
     tmp_dir.cleanup()
 
-def test_identical_analysis():
 
-    open_zip_mojo = zipfile.ZipFile("/tmp/test.zip", "r")
+def test_identical_analysis():
+    Python.add_to_path("./")
+    tests_helper = Python.import_module("tests_helper")
+    file_path = "/tmp/test.zip"
+    tests_helper.create_complicated_zip(file_path)
+
+    open_zip_mojo = zipfile.ZipFile(file_path, "r")
 
     assert_equal(open_zip_mojo.end_of_central_directory.number_of_this_disk, 0)
     assert_equal(open_zip_mojo.end_of_central_directory.number_of_the_disk_with_the_start_of_the_central_directory, 0)
-    assert_equal(open_zip_mojo.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk, 13)
-    assert_equal(open_zip_mojo.end_of_central_directory.total_number_of_entries_in_the_central_directory, 13)
-    assert_equal(open_zip_mojo.end_of_central_directory.size_of_the_central_directory, 1453)
-    assert_equal(open_zip_mojo.end_of_central_directory.offset_of_starting_disk_number, 11798996)
+    assert_equal(open_zip_mojo.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk, 4)
+    assert_equal(open_zip_mojo.end_of_central_directory.total_number_of_entries_in_the_central_directory, 4)
+    assert_equal(open_zip_mojo.end_of_central_directory.size_of_the_central_directory, 222)
+    assert_equal(open_zip_mojo.end_of_central_directory.offset_of_starting_disk_number, 187)
     assert_equal(len(open_zip_mojo.end_of_central_directory.zip_file_comment), 0)
+    infolist = open_zip_mojo.infolist()
 
-    assert_equal(len(open_zip_mojo.infolist()), 13)
-    reader = open_zip_mojo.open(open_zip_mojo.infolist()[0], "r")
-    bytes_of_file = reader.read()
+    assert_equal(len(infolist), 4)
+    assert_equal(infolist[0].filename, "hello.txt")
+    assert_equal(infolist[1].filename, "foo/bar.txt")
+    assert_equal(infolist[2].filename, "foo/baz.txt")
+    assert_equal(infolist[3].filename, "qux.txt")
 
     open_zip_mojo.close()
 
