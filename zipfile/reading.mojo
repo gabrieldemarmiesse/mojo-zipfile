@@ -5,8 +5,14 @@ from os import PathLike
 from builtin.file import FileHandle
 from .read_values import read_zip_value
 from .utils import _lists_are_equal
-from .metadata import LocalFileHeader, CentralDirectoryFileHeader, EndOfCentralDirectoryRecord, ZIP_STORED
+from .metadata import (
+    LocalFileHeader,
+    CentralDirectoryFileHeader,
+    EndOfCentralDirectoryRecord,
+    ZIP_STORED,
+)
 import os
+
 
 def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
     with open(filename, "rb") as fp:
@@ -17,6 +23,7 @@ def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
             return True
         else:
             return False
+
 
 @value
 struct ZipInfo:
@@ -34,12 +41,15 @@ struct ZipInfo:
     fn is_dir(self) -> Bool:
         return self.filename.endswith("/")
 
+
 struct ZipFileReader[origin: Origin[mut=True]]:
     var file: Pointer[FileHandle, origin]
     var uncompressed_size: UInt64
     var start: UInt64
 
-    fn __init__(out self, file: Pointer[FileHandle, origin], uncompressed_size: UInt64) raises:
+    fn __init__(
+        out self, file: Pointer[FileHandle, origin], uncompressed_size: UInt64
+    ) raises:
         self.file = file
         self.uncompressed_size = uncompressed_size
         self.start = file[].seek(0, os.SEEK_CUR)
@@ -66,22 +76,28 @@ struct ZipFile:
     var file_size: UInt64
     var end_of_central_directory: EndOfCentralDirectoryRecord
 
-    fn __init__[FileNameType: PathLike](out self, filename: FileNameType, mode: String) raises:
+    fn __init__[
+        FileNameType: PathLike
+    ](out self, filename: FileNameType, mode: String) raises:
         self.file = open(filename, mode)
-        if mode != "r":
-            raise Error("Only read mode is the only mode supported")
+        if mode not in String("r", "w"):
+            raise Error("Only read and write modes are suported")
         self.mode = mode
         self.file_size = self.file.seek(0, os.SEEK_END)
 
         # Let's assume that the file does not contains any comment.
         # Later on we can do the signature search.
-        self.end_of_central_directory_start = self.file.seek(self.file_size-22)
+        self.end_of_central_directory_start = self.file.seek(
+            self.file_size - 22
+        )
         self.end_of_central_directory = EndOfCentralDirectoryRecord(self.file)
 
     fn __moveinit__(out self, owned existing: Self):
         self.file = existing.file^
         self.mode = existing.mode
-        self.end_of_central_directory_start = existing.end_of_central_directory_start
+        self.end_of_central_directory_start = (
+            existing.end_of_central_directory_start
+        )
         self.end_of_central_directory = existing.end_of_central_directory^
         self.file_size = existing.file_size
 
@@ -94,7 +110,9 @@ struct ZipFile:
     fn close(mut self) raises:
         self.file.close()
 
-    fn open(mut self, name: ZipInfo, mode: String) raises -> ZipFileReader[__origin_of(self.file)]:
+    fn open(
+        mut self, name: ZipInfo, mode: String
+    ) raises -> ZipFileReader[__origin_of(self.file)]:
         if mode != "r":
             raise Error("Only read mode is the only mode supported")
         if name._compression_method != ZIP_STORED:
@@ -105,9 +123,11 @@ struct ZipFile:
 
         return ZipFileReader(Pointer(to=self.file), name._uncompressed_size)
 
-    fn open(mut self, name: String, mode: String) raises -> ZipFileReader[__origin_of(self.file)]:
+    fn open(
+        mut self, name: String, mode: String
+    ) raises -> ZipFileReader[__origin_of(self.file)]:
         return self.open(self.getinfo(name), mode)
-    
+
     fn getinfo(mut self, name: String) raises -> ZipInfo:
         # We need to seek to the start of the header
         self._start_reading_central_directory_file_headers()
@@ -120,10 +140,17 @@ struct ZipFile:
         raise Error(String("File ") + name + " not found in zip file")
 
     fn _start_reading_central_directory_file_headers(mut self) raises:
-        _ = self.file.seek(UInt64(self.end_of_central_directory.offset_of_starting_disk_number))
+        _ = self.file.seek(
+            UInt64(self.end_of_central_directory.offset_of_starting_disk_number)
+        )
 
-    fn _read_next_central_directory_file_header(mut self) raises -> Optional[CentralDirectoryFileHeader]:
-        if self.file.seek(0, os.SEEK_CUR) >= self.end_of_central_directory_start:
+    fn _read_next_central_directory_file_header(
+        mut self,
+    ) raises -> Optional[CentralDirectoryFileHeader]:
+        if (
+            self.file.seek(0, os.SEEK_CUR)
+            >= self.end_of_central_directory_start
+        ):
             return None
         return CentralDirectoryFileHeader(self.file)
 

@@ -13,7 +13,10 @@ def test_is_zipfile_valid():
     open_zip.writestr("test.txt", "This is a test file.")
     open_zip.close()
     # Check if the created file is a zip file
-    assert_true(zipfile.is_zipfile(String(tmp_zipfile_path)), "File should be a zip file")
+    assert_true(
+        zipfile.is_zipfile(String(tmp_zipfile_path)),
+        "File should be a zip file",
+    )
     tmp_dir.cleanup()
 
 
@@ -26,12 +29,29 @@ def test_identical_analysis():
     open_zip_mojo = zipfile.ZipFile(file_path, "r")
 
     assert_equal(open_zip_mojo.end_of_central_directory.number_of_this_disk, 0)
-    assert_equal(open_zip_mojo.end_of_central_directory.number_of_the_disk_with_the_start_of_the_central_directory, 0)
-    assert_equal(open_zip_mojo.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk, 4)
-    assert_equal(open_zip_mojo.end_of_central_directory.total_number_of_entries_in_the_central_directory, 4)
-    assert_equal(open_zip_mojo.end_of_central_directory.size_of_the_central_directory, 222)
-    assert_equal(open_zip_mojo.end_of_central_directory.offset_of_starting_disk_number, 187)
-    assert_equal(len(open_zip_mojo.end_of_central_directory.zip_file_comment), 0)
+    assert_equal(
+        open_zip_mojo.end_of_central_directory.number_of_the_disk_with_the_start_of_the_central_directory,
+        0,
+    )
+    assert_equal(
+        open_zip_mojo.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk,
+        4,
+    )
+    assert_equal(
+        open_zip_mojo.end_of_central_directory.total_number_of_entries_in_the_central_directory,
+        4,
+    )
+    assert_equal(
+        open_zip_mojo.end_of_central_directory.size_of_the_central_directory,
+        222,
+    )
+    assert_equal(
+        open_zip_mojo.end_of_central_directory.offset_of_starting_disk_number,
+        187,
+    )
+    assert_equal(
+        len(open_zip_mojo.end_of_central_directory.zip_file_comment), 0
+    )
     infolist = open_zip_mojo.infolist()
 
     assert_equal(len(infolist), 4)
@@ -48,7 +68,7 @@ def test_read_content():
     tests_helper = Python.import_module("tests_helper")
     file_path = "/tmp/dodo.zip"
     tests_helper.create_hello_world_zip(file_path)
-    
+
     open_zip_mojo = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo.infolist()), 1)
     hello_file = open_zip_mojo.open("hello.txt", "r")
@@ -65,8 +85,6 @@ def test_read_content():
     content = hello_file.read(5)
     assert_equal(String(bytes=content), "")
     open_zip_mojo.close()
-
-
 
 
 def main():
