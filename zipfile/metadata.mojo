@@ -102,6 +102,42 @@ struct CentralDirectoryFileHeader:
     var extra_field: List[UInt8]
     var file_comment: List[UInt8]
 
+    fn __init__(
+        out self,
+        version_made_by: UInt16,
+        version_needed_to_extract: UInt16,
+        general_purpose_bit_flag: UInt16,
+        compression_method: UInt16,
+        last_mod_file_time: UInt16,
+        last_mod_file_date: UInt16,
+        crc32: UInt32,
+        compressed_size: UInt32,
+        uncompressed_size: UInt32,
+        disk_number_start: UInt16,
+        internal_file_attributes: UInt16,
+        external_file_attributes: UInt32,
+        relative_offset_of_local_header: UInt32,
+        filename: List[UInt8],
+        extra_field: List[UInt8],
+        file_comment: List[UInt8],
+    ):
+        self.version_made_by = version_made_by
+        self.version_needed_to_extract = version_needed_to_extract
+        self.general_purpose_bit_flag = general_purpose_bit_flag
+        self.compression_method = compression_method
+        self.last_mod_file_time = last_mod_file_time
+        self.last_mod_file_date = last_mod_file_date
+        self.crc32 = crc32
+        self.compressed_size = compressed_size
+        self.uncompressed_size = uncompressed_size
+        self.disk_number_start = disk_number_start
+        self.internal_file_attributes = internal_file_attributes
+        self.external_file_attributes = external_file_attributes
+        self.relative_offset_of_local_header = relative_offset_of_local_header
+        self.filename = filename
+        self.extra_field = extra_field
+        self.file_comment = file_comment
+
     fn __init__(out self, fp: FileHandle) raises:
         # We read the fixed size part of the header
         signature = fp.read_bytes(4)
@@ -133,6 +169,28 @@ struct CentralDirectoryFileHeader:
         self.extra_field = fp.read_bytes(Int(extra_field_length))
         self.file_comment = fp.read_bytes(Int(file_comment_length))
 
+    fn write_to_file(self, mut fp: FileHandle) raises:
+        write_zip_value(fp, self.SIGNATURE)
+        write_zip_value(fp, self.version_made_by)
+        write_zip_value(fp, self.version_needed_to_extract)
+        write_zip_value(fp, self.general_purpose_bit_flag)
+        write_zip_value(fp, self.compression_method)
+        write_zip_value(fp, self.last_mod_file_time)
+        write_zip_value(fp, self.last_mod_file_date)
+        write_zip_value(fp, self.crc32)
+        write_zip_value(fp, self.compressed_size)
+        write_zip_value(fp, self.uncompressed_size)
+        write_zip_value(fp, UInt16(len(self.filename)))
+        write_zip_value(fp, UInt16(len(self.extra_field)))
+        write_zip_value(fp, UInt16(len(self.file_comment)))
+        write_zip_value(fp, self.disk_number_start)
+        write_zip_value(fp, self.internal_file_attributes)
+        write_zip_value(fp, self.external_file_attributes)
+        write_zip_value(fp, self.relative_offset_of_local_header)
+        write_zip_value(fp, self.filename)
+        write_zip_value(fp, self.extra_field)
+        write_zip_value(fp, self.file_comment)
+
 
 @value
 struct EndOfCentralDirectoryRecord:
@@ -145,6 +203,30 @@ struct EndOfCentralDirectoryRecord:
     var size_of_the_central_directory: UInt32
     var offset_of_starting_disk_number: UInt32
     var zip_file_comment: List[UInt8]
+
+    fn __init__(
+        out self,
+        number_of_this_disk: UInt16,
+        number_of_the_disk_with_the_start_of_the_central_directory: UInt16,
+        total_number_of_entries_in_the_central_directory_on_this_disk: UInt16,
+        total_number_of_entries_in_the_central_directory: UInt16,
+        size_of_the_central_directory: UInt32,
+        offset_of_starting_disk_number: UInt32,
+        zip_file_comment: List[UInt8],
+    ):
+        self.number_of_this_disk = number_of_this_disk
+        self.number_of_the_disk_with_the_start_of_the_central_directory = (
+            number_of_the_disk_with_the_start_of_the_central_directory
+        )
+        self.total_number_of_entries_in_the_central_directory_on_this_disk = (
+            total_number_of_entries_in_the_central_directory_on_this_disk
+        )
+        self.total_number_of_entries_in_the_central_directory = (
+            total_number_of_entries_in_the_central_directory
+        )
+        self.size_of_the_central_directory = size_of_the_central_directory
+        self.offset_of_starting_disk_number = offset_of_starting_disk_number
+        self.zip_file_comment = zip_file_comment
 
     fn __init__(out self, fp: FileHandle) raises:
         # We read the fixed size part of the header
@@ -166,3 +248,19 @@ struct EndOfCentralDirectoryRecord:
         self.offset_of_starting_disk_number = read_zip_value[DType.uint32](fp)
         zip_file_comment_length = read_zip_value[DType.uint16](fp)
         self.zip_file_comment = fp.read_bytes(Int(zip_file_comment_length))
+
+    fn write_to_file(self, mut fp: FileHandle) raises:
+        write_zip_value(fp, self.SIGNATURE)
+        write_zip_value(fp, self.number_of_this_disk)
+        write_zip_value(
+            fp, self.number_of_the_disk_with_the_start_of_the_central_directory
+        )
+        write_zip_value(
+            fp,
+            self.total_number_of_entries_in_the_central_directory_on_this_disk,
+        )
+        write_zip_value(fp, self.total_number_of_entries_in_the_central_directory)
+        write_zip_value(fp, self.size_of_the_central_directory)
+        write_zip_value(fp, self.offset_of_starting_disk_number)
+        write_zip_value(fp, UInt16(len(self.zip_file_comment)))
+        write_zip_value(fp, self.zip_file_comment)
