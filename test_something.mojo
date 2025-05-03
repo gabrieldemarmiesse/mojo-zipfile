@@ -46,6 +46,16 @@ def test_read_content():
     hello_file = open_zip_mojo.open("hello.txt", "r")
     content = hello_file.read()
     assert_equal(String(bytes=content), "hello world!")
+
+    hello_file = open_zip_mojo.open("hello.txt", "r")
+    content = hello_file.read(5)
+    assert_equal(String(bytes=content), "hello")
+    content = hello_file.read(5)
+    assert_equal(String(bytes=content), " worl")
+    content = hello_file.read(5)
+    assert_equal(String(bytes=content), "d!")
+    content = hello_file.read(5)
+    assert_equal(String(bytes=content), "")
     open_zip_mojo.close()
 
 
