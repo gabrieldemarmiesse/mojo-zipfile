@@ -37,10 +37,11 @@ def test_identical_analysis():
 
 def test_read_content():
     Python.add_to_path("./")
-    trying_stuff = Python.import_module("trying_stuff")
-    trying_stuff.dodo()
+    tests_helper = Python.import_module("tests_helper")
+    file_path = "/tmp/dodo.zip"
+    tests_helper.create_hello_world_zip(file_path)
     
-    open_zip_mojo = zipfile.ZipFile("/tmp/dodo.zip", "r")
+    open_zip_mojo = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo.infolist()), 1)
     hello_file = open_zip_mojo.open("hello.txt", "r")
     content = hello_file.read()
