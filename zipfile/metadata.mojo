@@ -64,7 +64,7 @@ struct LocalFileHeader:
         self.filename = fp.read_bytes(Int(filename_length))
         self.extra_field = fp.read_bytes(Int(extra_field_length))
 
-    fn write_to_file(self, mut fp: FileHandle) raises:
+    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
         # We write the fixed size part of the header
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.version_needed_to_extract)
@@ -79,6 +79,7 @@ struct LocalFileHeader:
         write_zip_value(fp, UInt16(len(self.extra_field)))
         write_zip_value(fp, self.filename)
         write_zip_value(fp, self.extra_field)
+        return 30 + len(self.filename) + len(self.extra_field)
 
 
 @value
@@ -169,7 +170,7 @@ struct CentralDirectoryFileHeader:
         self.extra_field = fp.read_bytes(Int(extra_field_length))
         self.file_comment = fp.read_bytes(Int(file_comment_length))
 
-    fn write_to_file(self, mut fp: FileHandle) raises:
+    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.version_made_by)
         write_zip_value(fp, self.version_needed_to_extract)
@@ -190,6 +191,9 @@ struct CentralDirectoryFileHeader:
         write_zip_value(fp, self.filename)
         write_zip_value(fp, self.extra_field)
         write_zip_value(fp, self.file_comment)
+        return 46 + len(self.filename) + len(self.extra_field) + len(
+            self.file_comment
+        )
 
 
 @value
@@ -249,7 +253,7 @@ struct EndOfCentralDirectoryRecord:
         zip_file_comment_length = read_zip_value[DType.uint16](fp)
         self.zip_file_comment = fp.read_bytes(Int(zip_file_comment_length))
 
-    fn write_to_file(self, mut fp: FileHandle) raises:
+    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.number_of_this_disk)
         write_zip_value(
@@ -264,3 +268,4 @@ struct EndOfCentralDirectoryRecord:
         write_zip_value(fp, self.offset_of_starting_disk_number)
         write_zip_value(fp, UInt16(len(self.zip_file_comment)))
         write_zip_value(fp, self.zip_file_comment)
+        return 22 + len(self.zip_file_comment)
