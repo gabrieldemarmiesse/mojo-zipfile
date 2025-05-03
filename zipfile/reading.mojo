@@ -3,7 +3,7 @@ Notably, we wont implement any storage option other than ZIP_STORED
 """
 from os import PathLike
 from builtin.file import FileHandle
-from .read_values import read_zip_value
+from .read_write_values import read_zip_value
 from .utils import _lists_are_equal
 from .metadata import (
     LocalFileHeader,
