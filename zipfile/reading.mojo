@@ -124,7 +124,7 @@ struct ZipFile:
                 number_of_the_disk_with_the_start_of_the_central_directory=0,
                 total_number_of_entries_in_the_central_directory_on_this_disk=0,
                 total_number_of_entries_in_the_central_directory=0,
-                size_of_the_central_directory=22,
+                size_of_the_central_directory=0,
                 offset_of_starting_disk_number=0,
                 zip_file_comment=List[UInt8](),
             )

@@ -1,6 +1,7 @@
 import zipfile
 from testing import assert_equal, assert_true
 from python import Python
+from pathlib import Path
 
 
 def test_is_zipfile_valid():
@@ -87,8 +88,25 @@ def test_read_content():
     open_zip_mojo.close()
 
 
+def test_write_empty_zip():
+    file_path = "/tmp/empty.zip"
+    other = "/tmp/empty2.zip"
+    open_zip_mojo = zipfile.ZipFile(file_path, "w")
+    open_zip_mojo.close()
+
+    Python.add_to_path("./")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.create_empty_zip(other)
+
+    bytes_mojo = Path(file_path).read_bytes()
+    bytes_python = Path(other).read_bytes()
+    assert_equal(bytes_mojo, bytes_python)
+
+
+
 def main():
     test_is_zipfile_valid()
     test_identical_analysis()
     test_read_content()
+    test_write_empty_zip()
     print("All tests passed!")
