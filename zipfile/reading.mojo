@@ -13,7 +13,7 @@ from .metadata import (
     GeneralPurposeBitFlag,
 )
 import os
-
+from .crc_32 import CRC32
 
 def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
     with open(filename, "rb") as fp:
@@ -32,12 +32,14 @@ struct ZipInfo:
     var _start_of_header: UInt64
     var _uncompressed_size: UInt64
     var _compression_method: UInt16
+    var _crc32: Optional[UInt32]
 
     def __init__(out self, header: CentralDirectoryFileHeader):
         self.filename = String(bytes=header.filename)
         self._start_of_header = UInt64(header.relative_offset_of_local_header)
         self._uncompressed_size = UInt64(header.uncompressed_size)
         self._compression_method = header.compression_method
+        self._crc32 = header.crc32
 
     fn is_dir(self) -> Bool:
         return self.filename.endswith("/")
@@ -47,13 +49,17 @@ struct ZipFileReader[origin: Origin[mut=True]]:
     var file: Pointer[FileHandle, origin]
     var uncompressed_size: UInt64
     var start: UInt64
+    var expected_crc32: UInt32
+    var crc32: CRC32
 
     fn __init__(
-        out self, file: Pointer[FileHandle, origin], uncompressed_size: UInt64
+        out self, file: Pointer[FileHandle, origin], uncompressed_size: UInt64, expected_crc32: UInt32
     ) raises:
         self.file = file
         self.uncompressed_size = uncompressed_size
         self.start = file[].seek(0, os.SEEK_CUR)
+        self.expected_crc32 = expected_crc32
+        self.crc32 = CRC32()
 
     fn _remaining_size(self) raises -> Int:
         end = self.start + self.uncompressed_size
@@ -66,7 +72,14 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         else:
             size = min(size, self._remaining_size())
 
-        return self.file[].read_bytes(size)
+        bytes = self.file[].read_bytes(size)
+        self.crc32.write(bytes)
+        if self._remaining_size() == 0:
+            # We are at the end of the file
+            computed_crc32 = self.crc32.get_final_crc()
+            if computed_crc32 != self.expected_crc32:
+                raise Error("CRC32 mismatch, expected: " + String(self.expected_crc32) + ", got: " + String(computed_crc32))
+        return bytes
 
 
 # Negactive offsets are broken in Mojo for seek
@@ -147,7 +160,7 @@ struct ZipFile:
         _ = self.file.seek(name._start_of_header)
         _ = LocalFileHeader(self.file)
 
-        return ZipFileReader(Pointer(to=self.file), name._uncompressed_size)
+        return ZipFileReader(Pointer(to=self.file), name._uncompressed_size, name._crc32.value())
 
     fn open(
         mut self, name: String, mode: String
