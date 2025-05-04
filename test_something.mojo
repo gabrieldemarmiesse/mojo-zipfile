@@ -109,9 +109,21 @@ def test_write_empty_zip():
     assert_equal(bytes_mojo, bytes_python)
 
 
+def test_write_simple_hello_world():
+    file_path = "/tmp/hello.zip"
+    open_zip_mojo = zipfile.ZipFile(file_path, "w")
+    open_zip_mojo.writestr("hello.txt", "hello world!")
+    open_zip_mojo.close()
+
+    Python.add_to_path("./")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.verify_hello_world_zip(file_path)
+
+
 def main():
     test_is_zipfile_valid()
     test_identical_analysis()
     test_read_content()
     test_write_empty_zip()
+    test_write_simple_hello_world()
     print("All tests passed!")

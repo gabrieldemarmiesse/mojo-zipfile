@@ -21,6 +21,12 @@ alias CRC32Table = generate_crc_32_table()
 
 struct CRC32:
     var _internal_value: UInt32
+
+    @staticmethod
+    fn get_crc_32(data: Span[UInt8]) -> UInt32:
+        crc = CRC32()
+        crc.write(data)
+        return crc.get_final_crc()
     
     fn __init__(out self):
         self._internal_value = 0xFFFFFFFF
@@ -33,3 +39,4 @@ struct CRC32:
 
     fn get_final_crc(self) -> UInt32:
         return ~self._internal_value
+

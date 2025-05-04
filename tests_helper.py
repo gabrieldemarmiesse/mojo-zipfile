@@ -22,3 +22,10 @@ def check_empty_zip(path: str):
 def create_empty_zip(path: str):
     with zipfile.ZipFile(path, "w") as zf:
         pass
+
+
+def verify_hello_world_zip(path: str):
+    assert zipfile.is_zipfile(path)
+    with zipfile.ZipFile(path, "r") as zf:
+        assert len(zf.namelist()) == 1
+        assert zf.read("hello.txt") == b"hello world!"

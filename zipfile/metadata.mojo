@@ -6,6 +6,11 @@ alias ZIP_DEFLATED: UInt16 = 8  # Not implement yet
 alias ZIP_BZIP2: UInt16 = 12  # Not implement yet
 
 
+alias DEFAULT_VERSION = 20
+alias ZIP64_VERSION = 45
+alias BZIP2_VERSION = 46
+alias LZMA_VERSION = 63
+
 @value
 struct GeneralPurposeBitFlag:
     var bits: UInt16
@@ -163,6 +168,27 @@ struct CentralDirectoryFileHeader:
     var filename: List[UInt8]
     var extra_field: List[UInt8]
     var file_comment: List[UInt8]
+
+    fn __init__(
+        out self, 
+        local_file_header: LocalFileHeader
+    ):
+        self.version_made_by = DEFAULT_VERSION
+        self.version_needed_to_extract = local_file_header.version_needed_to_extract
+        self.general_purpose_bit_flag = local_file_header.general_purpose_bit_flag
+        self.compression_method = local_file_header.compression_method
+        self.last_mod_file_time = local_file_header.last_mod_file_time
+        self.last_mod_file_date = local_file_header.last_mod_file_date
+        self.crc32 = local_file_header.crc32
+        self.compressed_size = local_file_header.compressed_size
+        self.uncompressed_size = local_file_header.uncompressed_size
+        self.disk_number_start = 0
+        self.internal_file_attributes = 0
+        self.external_file_attributes = 0
+        self.relative_offset_of_local_header = 0
+        self.filename = local_file_header.filename
+        self.extra_field = local_file_header.extra_field
+        self.file_comment = List[UInt8]()
 
     fn __init__(
         out self,

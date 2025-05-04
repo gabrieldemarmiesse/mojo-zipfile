@@ -88,6 +88,7 @@ struct ZipFile:
     var mode: String
     var end_of_central_directory_start: UInt64
     var file_size: UInt64
+    var central_directory_files_headers: List[CentralDirectoryFileHeader]
     var end_of_central_directory: EndOfCentralDirectoryRecord
 
     fn __init__[
@@ -97,6 +98,7 @@ struct ZipFile:
         if mode not in String("r", "w"):
             raise Error("Only read and write modes are suported")
         self.mode = mode
+        self.central_directory_files_headers = List[CentralDirectoryFileHeader]()
         if mode == "r":
             self.file_size = self.file.seek(0, os.SEEK_END)
 
@@ -131,6 +133,7 @@ struct ZipFile:
         )
         self.end_of_central_directory = existing.end_of_central_directory^
         self.file_size = existing.file_size
+        self.central_directory_files_headers = existing.central_directory_files_headers^
 
     fn __enter__(ref self) -> ref [__origin_of(self)] ZipFile:
         return self
@@ -140,6 +143,17 @@ struct ZipFile:
 
     fn close(mut self) raises:
         if self.mode == "w":
+            self.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk = len(self.central_directory_files_headers)
+            self.end_of_central_directory.total_number_of_entries_in_the_central_directory = len(self.central_directory_files_headers)
+            self.end_of_central_directory.offset_of_starting_disk_number = UInt32(self.file.seek(0, os.SEEK_CUR))
+            
+            for header in self.central_directory_files_headers:
+                _ = header[].write_to_file(self.file)
+
+            self.end_of_central_directory.size_of_the_central_directory = UInt32(
+                UInt32(self.file.seek(0, os.SEEK_CUR)) - self.end_of_central_directory.offset_of_starting_disk_number
+            )
+
             _ = self.end_of_central_directory.write_to_file(self.file)
         self.file.close()
 
@@ -162,21 +176,25 @@ struct ZipFile:
         return self.open(self.getinfo(name), mode)
 
     fn writestr(mut self, arcname: String, data: String) raises:
-        # Let's assume no compression
+        # Some streaming would be nice here
+        bytes = data.as_bytes()
+
         local_file_header = LocalFileHeader(
             version_needed_to_extract=20,
-            general_purpose_bit_flag=GeneralPurposeBitFlag(),
+            general_purpose_bit_flag=GeneralPurposeBitFlag(strings_are_utf8=True),
             compression_method=ZIP_STORED,
             last_mod_file_time=0,
             last_mod_file_date=0,
-            crc32=0,
+            crc32=CRC32.get_crc_32(bytes),
             compressed_size=0,
             uncompressed_size=0,
             filename=List[UInt8](arcname.as_bytes()),
             extra_field=List[UInt8](),
         )
         _ = local_file_header.write_to_file(self.file)
-        self.file.write_bytes(data.as_bytes())
+        self.central_directory_files_headers.append(CentralDirectoryFileHeader(local_file_header))
+        
+        self.file.write_bytes(bytes)
 
         # Add info somewhere so we can put it in the central directory later
 
