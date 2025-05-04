@@ -88,7 +88,7 @@ struct ZipFile:
     var mode: String
     var end_of_central_directory_start: UInt64
     var file_size: UInt64
-    var end_of_central_directory_optional: Optional[EndOfCentralDirectoryRecord]
+    var end_of_central_directory: EndOfCentralDirectoryRecord
 
     fn __init__[
         FileNameType: PathLike
@@ -105,18 +105,23 @@ struct ZipFile:
             self.end_of_central_directory_start = self.file.seek(
                 self.file_size - 22
             )
-            self.end_of_central_directory_optional = (
+            self.end_of_central_directory = (
                 EndOfCentralDirectoryRecord(self.file)
             )
         elif mode == "w":
             self.file_size = 0
             self.end_of_central_directory_start = 0
-            self.end_of_central_directory_optional = None
+            self.end_of_central_directory = EndOfCentralDirectoryRecord(
+                number_of_this_disk=0,
+                number_of_the_disk_with_the_start_of_the_central_directory=0,
+                total_number_of_entries_in_the_central_directory_on_this_disk=0,
+                total_number_of_entries_in_the_central_directory=0,
+                size_of_the_central_directory=0,
+                offset_of_starting_disk_number=0,
+                zip_file_comment=List[UInt8](),
+            )
         else:
             raise Error("Only read and write modes are suported")
-
-    fn end_of_central_directory(self) -> EndOfCentralDirectoryRecord:
-        return self.end_of_central_directory_optional.value()
 
     fn __moveinit__(out self, owned existing: Self):
         self.file = existing.file^
@@ -124,9 +129,7 @@ struct ZipFile:
         self.end_of_central_directory_start = (
             existing.end_of_central_directory_start
         )
-        self.end_of_central_directory_optional = (
-            existing.end_of_central_directory_optional^
-        )
+        self.end_of_central_directory = existing.end_of_central_directory^
         self.file_size = existing.file_size
 
     fn __enter__(ref self) -> ref [__origin_of(self)] ZipFile:
@@ -137,16 +140,7 @@ struct ZipFile:
 
     fn close(mut self) raises:
         if self.mode == "w":
-            end_of_central_directory = EndOfCentralDirectoryRecord(
-                number_of_this_disk=0,
-                number_of_the_disk_with_the_start_of_the_central_directory=0,
-                total_number_of_entries_in_the_central_directory_on_this_disk=0,
-                total_number_of_entries_in_the_central_directory=0,
-                size_of_the_central_directory=0,
-                offset_of_starting_disk_number=0,
-                zip_file_comment=List[UInt8](),
-            )
-            _ = end_of_central_directory.write_to_file(self.file)
+            _ = self.end_of_central_directory.write_to_file(self.file)
         self.file.close()
 
     fn open(
@@ -200,7 +194,7 @@ struct ZipFile:
     fn _start_reading_central_directory_file_headers(mut self) raises:
         _ = self.file.seek(
             UInt64(
-                self.end_of_central_directory().offset_of_starting_disk_number
+                self.end_of_central_directory.offset_of_starting_disk_number
             )
         )
 
