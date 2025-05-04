@@ -10,6 +10,7 @@ from .metadata import (
     CentralDirectoryFileHeader,
     EndOfCentralDirectoryRecord,
     ZIP_STORED,
+    GeneralPurposeBitFlag,
 )
 import os
 
@@ -91,14 +92,16 @@ struct ZipFile:
             self.end_of_central_directory_start = self.file.seek(
                 self.file_size - 22
             )
-            self.end_of_central_directory_optional = EndOfCentralDirectoryRecord(self.file)
+            self.end_of_central_directory_optional = (
+                EndOfCentralDirectoryRecord(self.file)
+            )
         elif mode == "w":
             self.file_size = 0
             self.end_of_central_directory_start = 0
             self.end_of_central_directory_optional = None
         else:
             raise Error("Only read and write modes are suported")
-    
+
     fn end_of_central_directory(self) -> EndOfCentralDirectoryRecord:
         return self.end_of_central_directory_optional.value()
 
@@ -108,7 +111,9 @@ struct ZipFile:
         self.end_of_central_directory_start = (
             existing.end_of_central_directory_start
         )
-        self.end_of_central_directory_optional = existing.end_of_central_directory_optional^
+        self.end_of_central_directory_optional = (
+            existing.end_of_central_directory_optional^
+        )
         self.file_size = existing.file_size
 
     fn __enter__(ref self) -> ref [__origin_of(self)] ZipFile:
@@ -149,6 +154,25 @@ struct ZipFile:
     ) raises -> ZipFileReader[__origin_of(self.file)]:
         return self.open(self.getinfo(name), mode)
 
+    fn writestr(mut self, arcname: String, data: String) raises:
+        # Let's assume no compression
+        local_file_header = LocalFileHeader(
+            version_needed_to_extract=20,
+            general_purpose_bit_flag=GeneralPurposeBitFlag(),
+            compression_method=ZIP_STORED,
+            last_mod_file_time=0,
+            last_mod_file_date=0,
+            crc32=0,
+            compressed_size=0,
+            uncompressed_size=0,
+            filename=List[UInt8](arcname.as_bytes()),
+            extra_field=List[UInt8](),
+        )
+        _ = local_file_header.write_to_file(self.file)
+        self.file.write_bytes(data.as_bytes())
+
+        # Add info somewhere so we can put it in the central directory later
+
     fn getinfo(mut self, name: String) raises -> ZipInfo:
         # We need to seek to the start of the header
         self._start_reading_central_directory_file_headers()
@@ -162,7 +186,9 @@ struct ZipFile:
 
     fn _start_reading_central_directory_file_headers(mut self) raises:
         _ = self.file.seek(
-            UInt64(self.end_of_central_directory().offset_of_starting_disk_number)
+            UInt64(
+                self.end_of_central_directory().offset_of_starting_disk_number
+            )
         )
 
     fn _read_next_central_directory_file_header(

@@ -7,11 +7,70 @@ alias ZIP_BZIP2: UInt16 = 12  # Not implement yet
 
 
 @value
+struct GeneralPurposeBitFlag:
+    var bits: UInt16
+
+    fn __init__(out self, bits: UInt16):
+        self.bits = bits
+
+    @always_inline
+    fn __init__(
+        out self,
+        encrypted: Bool = False,
+        compression_option_1: Bool = False,
+        compression_option_2: Bool = False,
+        moved_to_data_descriptor: Bool = False,
+        enhanced_deflation: Bool = False,
+        is_compressed_patch_data: Bool = False,
+        strong_encryption: Bool = False,
+        strings_are_utf8: Bool = False,
+        mask_header_values: Bool = False,
+    ):
+        self.bits = 0
+        self.bits |= UInt16(1 << 0) * UInt16(Int(encrypted))
+        self.bits |= UInt16(1 << 1) * UInt16(Int(compression_option_1))
+        self.bits |= UInt16(1 << 2) * UInt16(Int(compression_option_2))
+        self.bits |= UInt16(1 << 3) * UInt16(Int(moved_to_data_descriptor))
+        self.bits |= UInt16(1 << 4) * UInt16(Int(enhanced_deflation))
+        self.bits |= UInt16(1 << 5) * UInt16(Int(is_compressed_patch_data))
+        self.bits |= UInt16(1 << 6) * UInt16(Int(strong_encryption))
+        self.bits |= UInt16(1 << 11) * UInt16(Int(strings_are_utf8))
+        self.bits |= UInt16(1 << 13) * UInt16(Int(mask_header_values))
+
+    fn encrypted(self) -> Bool:
+        return (self.bits & UInt16(1 << 0)) != 0
+
+    fn compression_option_1(self) -> Bool:
+        return (self.bits & UInt16(1 << 1)) != 0
+
+    fn compression_option_2(self) -> Bool:
+        return (self.bits & UInt16(1 << 2)) != 0
+
+    fn moved_to_data_descriptor(self) -> Bool:
+        return (self.bits & UInt16(1 << 3)) != 0
+
+    fn enhanced_deflation(self) -> Bool:
+        return (self.bits & UInt16(1 << 4)) != 0
+
+    fn is_compressed_patch_data(self) -> Bool:
+        return (self.bits & UInt16(1 << 5)) != 0
+
+    fn strong_encryption(self) -> Bool:
+        return (self.bits & UInt16(1 << 6)) != 0
+
+    fn strings_are_utf8(self) -> Bool:
+        return (self.bits & UInt16(1 << 11)) != 0
+
+    fn mask_header_values(self) -> Bool:
+        return (self.bits & UInt16(1 << 13)) != 0
+
+
+@value
 struct LocalFileHeader:
     alias SIGNATURE = List[UInt8](0x50, 0x4B, 3, 4)
 
     var version_needed_to_extract: UInt16
-    var general_purpose_bit_flag: UInt16
+    var general_purpose_bit_flag: GeneralPurposeBitFlag
     var compression_method: UInt16
     var last_mod_file_time: UInt16
     var last_mod_file_date: UInt16
@@ -24,7 +83,7 @@ struct LocalFileHeader:
     fn __init__(
         out self,
         version_needed_to_extract: UInt16,
-        general_purpose_bit_flag: UInt16,
+        general_purpose_bit_flag: GeneralPurposeBitFlag,
         compression_method: UInt16,
         last_mod_file_time: UInt16,
         last_mod_file_date: UInt16,
@@ -52,7 +111,9 @@ struct LocalFileHeader:
             raise Error("Signature invalid for LocalFileHeader")
 
         self.version_needed_to_extract = read_zip_value[DType.uint16](fp)
-        self.general_purpose_bit_flag = read_zip_value[DType.uint16](fp)
+        self.general_purpose_bit_flag = GeneralPurposeBitFlag(
+            read_zip_value[DType.uint16](fp)
+        )
         self.compression_method = read_zip_value[DType.uint16](fp)
         self.last_mod_file_time = read_zip_value[DType.uint16](fp)
         self.last_mod_file_date = read_zip_value[DType.uint16](fp)
@@ -68,7 +129,7 @@ struct LocalFileHeader:
         # We write the fixed size part of the header
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.version_needed_to_extract)
-        write_zip_value(fp, self.general_purpose_bit_flag)
+        write_zip_value(fp, self.general_purpose_bit_flag.bits)
         write_zip_value(fp, self.compression_method)
         write_zip_value(fp, self.last_mod_file_time)
         write_zip_value(fp, self.last_mod_file_date)
@@ -88,7 +149,7 @@ struct CentralDirectoryFileHeader:
 
     var version_made_by: UInt16
     var version_needed_to_extract: UInt16
-    var general_purpose_bit_flag: UInt16
+    var general_purpose_bit_flag: GeneralPurposeBitFlag
     var compression_method: UInt16
     var last_mod_file_time: UInt16
     var last_mod_file_date: UInt16
@@ -107,7 +168,7 @@ struct CentralDirectoryFileHeader:
         out self,
         version_made_by: UInt16,
         version_needed_to_extract: UInt16,
-        general_purpose_bit_flag: UInt16,
+        general_purpose_bit_flag: GeneralPurposeBitFlag,
         compression_method: UInt16,
         last_mod_file_time: UInt16,
         last_mod_file_date: UInt16,
@@ -152,7 +213,9 @@ struct CentralDirectoryFileHeader:
 
         self.version_made_by = read_zip_value[DType.uint16](fp)
         self.version_needed_to_extract = read_zip_value[DType.uint16](fp)
-        self.general_purpose_bit_flag = read_zip_value[DType.uint16](fp)
+        self.general_purpose_bit_flag = GeneralPurposeBitFlag(
+            read_zip_value[DType.uint16](fp)
+        )
         self.compression_method = read_zip_value[DType.uint16](fp)
         self.last_mod_file_time = read_zip_value[DType.uint16](fp)
         self.last_mod_file_date = read_zip_value[DType.uint16](fp)
@@ -174,7 +237,7 @@ struct CentralDirectoryFileHeader:
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.version_made_by)
         write_zip_value(fp, self.version_needed_to_extract)
-        write_zip_value(fp, self.general_purpose_bit_flag)
+        write_zip_value(fp, self.general_purpose_bit_flag.bits)
         write_zip_value(fp, self.compression_method)
         write_zip_value(fp, self.last_mod_file_time)
         write_zip_value(fp, self.last_mod_file_date)
@@ -191,8 +254,11 @@ struct CentralDirectoryFileHeader:
         write_zip_value(fp, self.filename)
         write_zip_value(fp, self.extra_field)
         write_zip_value(fp, self.file_comment)
-        return 46 + len(self.filename) + len(self.extra_field) + len(
-            self.file_comment
+        return (
+            46
+            + len(self.filename)
+            + len(self.extra_field)
+            + len(self.file_comment)
         )
 
 
@@ -263,7 +329,9 @@ struct EndOfCentralDirectoryRecord:
             fp,
             self.total_number_of_entries_in_the_central_directory_on_this_disk,
         )
-        write_zip_value(fp, self.total_number_of_entries_in_the_central_directory)
+        write_zip_value(
+            fp, self.total_number_of_entries_in_the_central_directory
+        )
         write_zip_value(fp, self.size_of_the_central_directory)
         write_zip_value(fp, self.offset_of_starting_disk_number)
         write_zip_value(fp, UInt16(len(self.zip_file_comment)))

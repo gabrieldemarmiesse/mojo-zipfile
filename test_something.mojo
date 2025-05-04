@@ -29,7 +29,9 @@ def test_identical_analysis():
 
     open_zip_mojo = zipfile.ZipFile(file_path, "r")
 
-    assert_equal(open_zip_mojo.end_of_central_directory().number_of_this_disk, 0)
+    assert_equal(
+        open_zip_mojo.end_of_central_directory().number_of_this_disk, 0
+    )
     assert_equal(
         open_zip_mojo.end_of_central_directory().number_of_the_disk_with_the_start_of_the_central_directory,
         0,
@@ -101,7 +103,6 @@ def test_write_empty_zip():
     bytes_mojo = Path(file_path).read_bytes()
     bytes_python = Path(other).read_bytes()
     assert_equal(bytes_mojo, bytes_python)
-
 
 
 def main():
