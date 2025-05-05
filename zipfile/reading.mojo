@@ -186,8 +186,8 @@ struct ZipFile:
             last_mod_file_time=0,
             last_mod_file_date=0,
             crc32=CRC32.get_crc_32(bytes),
-            compressed_size=0,
-            uncompressed_size=0,
+            compressed_size=len(bytes),
+            uncompressed_size=len(bytes),
             filename=List[UInt8](arcname.as_bytes()),
             extra_field=List[UInt8](),
         )
