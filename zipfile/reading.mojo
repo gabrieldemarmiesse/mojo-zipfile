@@ -3,7 +3,7 @@ Notably, we wont implement any storage option other than ZIP_STORED
 """
 from os import PathLike
 from builtin.file import FileHandle
-from .read_write_values import read_zip_value
+from .read_write_values import read_zip_value, write_zip_value
 from .utils import _lists_are_equal
 from .metadata import (
     LocalFileHeader,
@@ -14,6 +14,7 @@ from .metadata import (
 )
 import os
 from .crc_32 import CRC32
+
 
 def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
     with open(filename, "rb") as fp:
@@ -53,7 +54,10 @@ struct ZipFileReader[origin: Origin[mut=True]]:
     var crc32: CRC32
 
     fn __init__(
-        out self, file: Pointer[FileHandle, origin], uncompressed_size: UInt64, expected_crc32: UInt32
+        out self,
+        file: Pointer[FileHandle, origin],
+        uncompressed_size: UInt64,
+        expected_crc32: UInt32,
     ) raises:
         self.file = file
         self.uncompressed_size = uncompressed_size
@@ -78,8 +82,68 @@ struct ZipFileReader[origin: Origin[mut=True]]:
             # We are at the end of the file
             computed_crc32 = self.crc32.get_final_crc()
             if computed_crc32 != self.expected_crc32:
-                raise Error("CRC32 mismatch, expected: " + String(self.expected_crc32) + ", got: " + String(computed_crc32))
+                raise Error(
+                    "CRC32 mismatch, expected: "
+                    + String(self.expected_crc32)
+                    + ", got: "
+                    + String(computed_crc32)
+                )
         return bytes
+
+
+struct ZipFileWriter[origin: Origin[mut=True]]:
+    var file: Pointer[FileHandle, origin]
+    var local_file_header: LocalFileHeader
+    var crc32: CRC32
+    var compressed_size: UInt64
+    var uncompressed_size: UInt64
+    var crc32_position: UInt64
+
+    fn __init__(
+        out self, file: Pointer[FileHandle, origin], name: String, mode: String
+    ) raises:
+        self.file = file
+        self.local_file_header = LocalFileHeader(
+            version_needed_to_extract=20,
+            general_purpose_bit_flag=GeneralPurposeBitFlag(
+                strings_are_utf8=True
+            ),
+            compression_method=ZIP_STORED,
+            last_mod_file_time=0,
+            last_mod_file_date=0,
+            crc32=0,  # We'll write it when closing
+            compressed_size=0,  # We'll write it when closing
+            uncompressed_size=0,  # We'll write it when closing
+            filename=List[UInt8](name.as_bytes()),
+            extra_field=List[UInt8](),
+        )
+        self.crc32 = CRC32()
+        self.compressed_size = 0
+        self.uncompressed_size = 0
+        self.crc32_position = self.file[].seek(0, os.SEEK_CUR) + 14
+        _ = self.local_file_header.write_to_file(self.file[])
+
+    fn write(mut self, data: Span[UInt8]) raises:
+        self.file[].write_bytes(data)
+        self.compressed_size += UInt64(len(data))
+        self.uncompressed_size += UInt64(len(data))
+        self.crc32.write(data)
+
+    fn close(mut self) raises -> CentralDirectoryFileHeader:
+        # We need to write the crc32 and the compressed size
+        self.local_file_header.crc32 = self.crc32.get_final_crc()
+        self.local_file_header.compressed_size = UInt32(self.compressed_size)
+        self.local_file_header.uncompressed_size = UInt32(
+            self.uncompressed_size
+        )
+
+        old_position = self.file[].seek(0, os.SEEK_CUR)
+        _ = self.file[].seek(self.crc32_position)
+        write_zip_value(self.file[], self.local_file_header.crc32)
+        write_zip_value(self.file[], self.local_file_header.compressed_size)
+        write_zip_value(self.file[], self.local_file_header.uncompressed_size)
+        _ = self.file[].seek(old_position)
+        return CentralDirectoryFileHeader(self.local_file_header)
 
 
 # Negactive offsets are broken in Mojo for seek
@@ -98,7 +162,9 @@ struct ZipFile:
         if mode not in String("r", "w"):
             raise Error("Only read and write modes are suported")
         self.mode = mode
-        self.central_directory_files_headers = List[CentralDirectoryFileHeader]()
+        self.central_directory_files_headers = List[
+            CentralDirectoryFileHeader
+        ]()
         if mode == "r":
             self.file_size = self.file.seek(0, os.SEEK_END)
 
@@ -107,8 +173,8 @@ struct ZipFile:
             self.end_of_central_directory_start = self.file.seek(
                 self.file_size - 22
             )
-            self.end_of_central_directory = (
-                EndOfCentralDirectoryRecord(self.file)
+            self.end_of_central_directory = EndOfCentralDirectoryRecord(
+                self.file
             )
         elif mode == "w":
             self.file_size = 0
@@ -133,7 +199,9 @@ struct ZipFile:
         )
         self.end_of_central_directory = existing.end_of_central_directory^
         self.file_size = existing.file_size
-        self.central_directory_files_headers = existing.central_directory_files_headers^
+        self.central_directory_files_headers = (
+            existing.central_directory_files_headers^
+        )
 
     fn __enter__(ref self) -> ref [__origin_of(self)] ZipFile:
         return self
@@ -143,15 +211,22 @@ struct ZipFile:
 
     fn close(mut self) raises:
         if self.mode == "w":
-            self.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk = len(self.central_directory_files_headers)
-            self.end_of_central_directory.total_number_of_entries_in_the_central_directory = len(self.central_directory_files_headers)
-            self.end_of_central_directory.offset_of_starting_disk_number = UInt32(self.file.seek(0, os.SEEK_CUR))
-            
+            self.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk = len(
+                self.central_directory_files_headers
+            )
+            self.end_of_central_directory.total_number_of_entries_in_the_central_directory = len(
+                self.central_directory_files_headers
+            )
+            self.end_of_central_directory.offset_of_starting_disk_number = (
+                UInt32(self.file.seek(0, os.SEEK_CUR))
+            )
+
             for header in self.central_directory_files_headers:
                 _ = header[].write_to_file(self.file)
 
             self.end_of_central_directory.size_of_the_central_directory = UInt32(
-                UInt32(self.file.seek(0, os.SEEK_CUR)) - self.end_of_central_directory.offset_of_starting_disk_number
+                UInt32(self.file.seek(0, os.SEEK_CUR))
+                - self.end_of_central_directory.offset_of_starting_disk_number
             )
 
             _ = self.end_of_central_directory.write_to_file(self.file)
@@ -168,33 +243,27 @@ struct ZipFile:
         _ = self.file.seek(name._start_of_header)
         _ = LocalFileHeader(self.file)
 
-        return ZipFileReader(Pointer(to=self.file), name._uncompressed_size, name._crc32.value())
+        return ZipFileReader(
+            Pointer(to=self.file), name._uncompressed_size, name._crc32.value()
+        )
 
     fn open(
         mut self, name: String, mode: String
     ) raises -> ZipFileReader[__origin_of(self.file)]:
         return self.open(self.getinfo(name), mode)
 
+    fn open_to_write(
+        mut self, name: String, mode: String
+    ) raises -> ZipFileWriter[__origin_of(self.file)]:
+        if mode != "w":
+            raise Error("Only write mode is the only mode supported")
+        return ZipFileWriter(Pointer(to=self.file), name, mode)
+
     fn writestr(mut self, arcname: String, data: String) raises:
         # Some streaming would be nice here
-        bytes = data.as_bytes()
-
-        local_file_header = LocalFileHeader(
-            version_needed_to_extract=20,
-            general_purpose_bit_flag=GeneralPurposeBitFlag(strings_are_utf8=True),
-            compression_method=ZIP_STORED,
-            last_mod_file_time=0,
-            last_mod_file_date=0,
-            crc32=CRC32.get_crc_32(bytes),
-            compressed_size=len(bytes),
-            uncompressed_size=len(bytes),
-            filename=List[UInt8](arcname.as_bytes()),
-            extra_field=List[UInt8](),
-        )
-        _ = local_file_header.write_to_file(self.file)
-        self.central_directory_files_headers.append(CentralDirectoryFileHeader(local_file_header))
-        
-        self.file.write_bytes(bytes)
+        file_handle = self.open_to_write(arcname, "w")
+        file_handle.write(data.as_bytes())
+        self.central_directory_files_headers.append(file_handle.close())
 
         # Add info somewhere so we can put it in the central directory later
 
@@ -211,9 +280,7 @@ struct ZipFile:
 
     fn _start_reading_central_directory_file_headers(mut self) raises:
         _ = self.file.seek(
-            UInt64(
-                self.end_of_central_directory.offset_of_starting_disk_number
-            )
+            UInt64(self.end_of_central_directory.offset_of_starting_disk_number)
         )
 
     fn _read_next_central_directory_file_header(

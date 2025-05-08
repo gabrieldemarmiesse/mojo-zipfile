@@ -11,6 +11,7 @@ alias ZIP64_VERSION = 45
 alias BZIP2_VERSION = 46
 alias LZMA_VERSION = 63
 
+
 @value
 struct GeneralPurposeBitFlag:
     var bits: UInt16
@@ -73,6 +74,7 @@ struct GeneralPurposeBitFlag:
 @value
 struct LocalFileHeader:
     alias SIGNATURE = List[UInt8](0x50, 0x4B, 3, 4)
+    alias CRC32_OFFSET = 14
 
     var version_needed_to_extract: UInt16
     var general_purpose_bit_flag: GeneralPurposeBitFlag
@@ -169,13 +171,14 @@ struct CentralDirectoryFileHeader:
     var extra_field: List[UInt8]
     var file_comment: List[UInt8]
 
-    fn __init__(
-        out self, 
-        local_file_header: LocalFileHeader
-    ):
+    fn __init__(out self, local_file_header: LocalFileHeader):
         self.version_made_by = DEFAULT_VERSION
-        self.version_needed_to_extract = local_file_header.version_needed_to_extract
-        self.general_purpose_bit_flag = local_file_header.general_purpose_bit_flag
+        self.version_needed_to_extract = (
+            local_file_header.version_needed_to_extract
+        )
+        self.general_purpose_bit_flag = (
+            local_file_header.general_purpose_bit_flag
+        )
         self.compression_method = local_file_header.compression_method
         self.last_mod_file_time = local_file_header.last_mod_file_time
         self.last_mod_file_date = local_file_header.last_mod_file_date

@@ -3,6 +3,7 @@ It's the same algorithm used in the zipfile module in Python.
 Reference: https://github.com/python/cpython/blob/main/Modules/binascii.c#L739
 """
 
+
 fn generate_crc_32_table() -> InlineArray[UInt32, 256]:
     table = InlineArray[UInt32, 256](fill=0)
     for i in range(256):
@@ -27,7 +28,7 @@ struct CRC32:
         crc = CRC32()
         crc.write(data)
         return crc.get_final_crc()
-    
+
     fn __init__(out self):
         self._internal_value = 0xFFFFFFFF
 
@@ -39,4 +40,3 @@ struct CRC32:
 
     fn get_final_crc(self) -> UInt32:
         return ~self._internal_value
-
