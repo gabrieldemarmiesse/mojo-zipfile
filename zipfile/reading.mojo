@@ -1,7 +1,7 @@
 """This module implement reading a zip file in Mojo. It follows the Python api, but will have less features.
 Notably, we wont implement any storage option other than ZIP_STORED
 """
-from os import PathLike
+from os import PathLike, abort
 from builtin.file import FileHandle
 from .read_write_values import read_zip_value, write_zip_value
 from .utils import _lists_are_equal
@@ -92,17 +92,18 @@ struct ZipFileReader[origin: Origin[mut=True]]:
 
 
 struct ZipFileWriter[origin: Origin[mut=True]]:
-    var file: Pointer[FileHandle, origin]
+    var zipfile: Pointer[ZipFile, origin]
     var local_file_header: LocalFileHeader
     var crc32: CRC32
     var compressed_size: UInt64
     var uncompressed_size: UInt64
     var crc32_position: UInt64
+    var open: Bool
 
     fn __init__(
-        out self, file: Pointer[FileHandle, origin], name: String, mode: String
+        out self, zipfile: Pointer[ZipFile, origin], name: String, mode: String
     ) raises:
-        self.file = file
+        self.zipfile = zipfile
         self.local_file_header = LocalFileHeader(
             version_needed_to_extract=20,
             general_purpose_bit_flag=GeneralPurposeBitFlag(
@@ -120,16 +121,22 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         self.crc32 = CRC32()
         self.compressed_size = 0
         self.uncompressed_size = 0
-        self.crc32_position = self.file[].seek(0, os.SEEK_CUR) + 14
-        _ = self.local_file_header.write_to_file(self.file[])
+        self.crc32_position = self.zipfile[].file.seek(0, os.SEEK_CUR) + 14
+        _ = self.local_file_header.write_to_file(self.zipfile[].file)
+        self.open = True
 
     fn write(mut self, data: Span[UInt8]) raises:
-        self.file[].write_bytes(data)
+        if not self.open:
+            raise Error("File is closed. You must have called close() beforehand.")
+        self.zipfile[].file.write_bytes(data)
         self.compressed_size += UInt64(len(data))
         self.uncompressed_size += UInt64(len(data))
         self.crc32.write(data)
 
-    fn close(mut self) raises -> CentralDirectoryFileHeader:
+    fn close(mut self) raises:
+        if not self.open:
+            raise Error("File is closed. You must have called close() beforehand.")
+
         # We need to write the crc32 and the compressed size
         self.local_file_header.crc32 = self.crc32.get_final_crc()
         self.local_file_header.compressed_size = UInt32(self.compressed_size)
@@ -137,13 +144,21 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             self.uncompressed_size
         )
 
-        old_position = self.file[].seek(0, os.SEEK_CUR)
-        _ = self.file[].seek(self.crc32_position)
-        write_zip_value(self.file[], self.local_file_header.crc32)
-        write_zip_value(self.file[], self.local_file_header.compressed_size)
-        write_zip_value(self.file[], self.local_file_header.uncompressed_size)
-        _ = self.file[].seek(old_position)
-        return CentralDirectoryFileHeader(self.local_file_header)
+        old_position = self.zipfile[].file.seek(0, os.SEEK_CUR)
+        _ = self.zipfile[].file.seek(self.crc32_position)
+        write_zip_value(self.zipfile[].file, self.local_file_header.crc32)
+        write_zip_value(self.zipfile[].file, self.local_file_header.compressed_size)
+        write_zip_value(self.zipfile[].file, self.local_file_header.uncompressed_size)
+        _ = self.zipfile[].file.seek(old_position)
+        self.zipfile[].central_directory_files_headers.append(CentralDirectoryFileHeader(self.local_file_header))
+        self.open = False
+
+    fn __del__(owned self):
+        if self.open:
+            try:
+                self.close()
+            except Error:
+                abort("Failed to close the file properly. You should call close() manually if you want to catch the error.")
 
 
 # Negactive offsets are broken in Mojo for seek
@@ -254,18 +269,16 @@ struct ZipFile:
 
     fn open_to_write(
         mut self, name: String, mode: String
-    ) raises -> ZipFileWriter[__origin_of(self.file)]:
+    ) raises -> ZipFileWriter[__origin_of(self)]:
         if mode != "w":
             raise Error("Only write mode is the only mode supported")
-        return ZipFileWriter(Pointer(to=self.file), name, mode)
+        return ZipFileWriter(Pointer(to=self), name, mode)
 
     fn writestr(mut self, arcname: String, data: String) raises:
         # Some streaming would be nice here
         file_handle = self.open_to_write(arcname, "w")
         file_handle.write(data.as_bytes())
-        self.central_directory_files_headers.append(file_handle.close())
-
-        # Add info somewhere so we can put it in the central directory later
+        file_handle.close()
 
     fn getinfo(mut self, name: String) raises -> ZipInfo:
         # We need to seek to the start of the header

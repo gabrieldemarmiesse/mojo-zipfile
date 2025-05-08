@@ -118,6 +118,37 @@ def test_write_simple_hello_world():
     tests_helper.verify_hello_world_zip(file_path)
 
 
+def test_write_simple_hello_world_progressive_with_close():
+    file_path = "/tmp/hello.zip"
+    open_zip_mojo = zipfile.ZipFile(file_path, "w")
+    zip_entry = open_zip_mojo.open_to_write("hello.txt", "w")
+    zip_entry.write(String("hello").as_bytes())
+    zip_entry.write(String(" wo").as_bytes())
+    zip_entry.write(String("rld!").as_bytes())
+    zip_entry.close()
+    open_zip_mojo.close()
+
+    Python.add_to_path("./")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.verify_hello_world_zip(file_path)
+
+
+def test_write_simple_hello_world_progressive_without_close():
+    file_path = "/tmp/hello.zip"
+    open_zip_mojo = zipfile.ZipFile(file_path, "w")
+    zip_entry = open_zip_mojo.open_to_write("hello.txt", "w")
+    zip_entry.write(String("hello").as_bytes())
+    zip_entry.write(String(" wo").as_bytes())
+    zip_entry.write(String("rld!").as_bytes())
+    # We rely on the asap destructor to close the file
+    open_zip_mojo.close()
+
+    Python.add_to_path("./")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.verify_hello_world_zip(file_path)
+
+
+
 def main():
     test_is_zipfile_valid()
     test_identical_analysis()
