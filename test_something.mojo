@@ -148,7 +148,6 @@ def test_write_simple_hello_world_progressive_without_close():
     tests_helper.verify_hello_world_zip(file_path)
 
 
-
 def main():
     test_is_zipfile_valid()
     test_identical_analysis()

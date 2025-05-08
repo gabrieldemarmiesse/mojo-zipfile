@@ -10,10 +10,13 @@ from .metadata import (
     CentralDirectoryFileHeader,
     EndOfCentralDirectoryRecord,
     ZIP_STORED,
+    ZIP_DEFLATED,
     GeneralPurposeBitFlag,
 )
 import os
 from .crc_32 import CRC32
+from .compression import uncompress
+from utils import Variant
 
 
 def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
@@ -31,6 +34,7 @@ def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
 struct ZipInfo:
     var filename: String
     var _start_of_header: UInt64
+    var _compressed_size: UInt64
     var _uncompressed_size: UInt64
     var _compression_method: UInt16
     var _crc32: Optional[UInt32]
@@ -38,6 +42,7 @@ struct ZipInfo:
     def __init__(out self, header: CentralDirectoryFileHeader):
         self.filename = String(bytes=header.filename)
         self._start_of_header = UInt64(header.relative_offset_of_local_header)
+        self._compressed_size = UInt64(header.compressed_size)
         self._uncompressed_size = UInt64(header.uncompressed_size)
         self._compression_method = header.compression_method
         self._crc32 = header.crc32
@@ -48,47 +53,86 @@ struct ZipInfo:
 
 struct ZipFileReader[origin: Origin[mut=True]]:
     var file: Pointer[FileHandle, origin]
+    var compressed_size: UInt64
     var uncompressed_size: UInt64
+    var compression_method: UInt16
     var start: UInt64
     var expected_crc32: UInt32
     var crc32: CRC32
+    var _inner_buffer: List[UInt8]
 
     fn __init__(
         out self,
         file: Pointer[FileHandle, origin],
+        compressed_size: UInt64,
         uncompressed_size: UInt64,
+        compression_method: UInt16,
         expected_crc32: UInt32,
     ) raises:
         self.file = file
+        self.compressed_size = compressed_size
         self.uncompressed_size = uncompressed_size
+        self.compression_method = compression_method
         self.start = file[].seek(0, os.SEEK_CUR)
         self.expected_crc32 = expected_crc32
         self.crc32 = CRC32()
+        self._inner_buffer = List[UInt8]()
+
+    fn _is_at_start(self) raises -> Bool:
+        return self.file[].seek(0, os.SEEK_CUR) == self.start
 
     fn _remaining_size(self) raises -> Int:
-        end = self.start + self.uncompressed_size
+        end = self.start + self.compressed_size
 
         return Int(end - self.file[].seek(0, os.SEEK_CUR))
 
-    fn read(mut self, owned size: Int = -1) raises -> List[UInt8]:
-        if size == -1:
-            size = self._remaining_size()
-        else:
-            size = min(size, self._remaining_size())
+    fn _check_crc32(self) raises:
+        computed_crc32 = self.crc32.get_final_crc()
+        if computed_crc32 != self.expected_crc32:
+            raise Error(
+                "CRC32 mismatch, expected: "
+                + String(self.expected_crc32)
+                + ", got: "
+                + String(computed_crc32)
+            )
 
-        bytes = self.file[].read_bytes(size)
-        self.crc32.write(bytes)
-        if self._remaining_size() == 0:
-            # We are at the end of the file
-            computed_crc32 = self.crc32.get_final_crc()
-            if computed_crc32 != self.expected_crc32:
-                raise Error(
-                    "CRC32 mismatch, expected: "
-                    + String(self.expected_crc32)
-                    + ", got: "
-                    + String(computed_crc32)
+    fn read(mut self, owned size: Int = -1) raises -> List[UInt8]:
+        if self.compression_method == ZIP_STORED:
+            if size == -1:
+                size = self._remaining_size()
+            else:
+                size = min(size, self._remaining_size())
+
+            bytes = self.file[].read_bytes(size)
+            self.crc32.write(bytes)
+
+            if self._remaining_size() == 0:
+                # We are at the end of the file
+                self._check_crc32()
+            return bytes
+        elif self.compression_method == ZIP_DEFLATED:
+            if self._is_at_start():
+                # Let's write everything to the inner buffer in one go
+                self._inner_buffer = uncompress(
+                    self.file[].read_bytes(Int(self.compressed_size))
                 )
-        return bytes
+                self.crc32.write(self._inner_buffer)
+                self._check_crc32()
+
+            # We progressively return part of the inner buffer
+            if size == -1:
+                size = len(self._inner_buffer)
+            else:
+                size = min(size, len(self._inner_buffer))
+            to_return = self._inner_buffer[:size]
+            self._inner_buffer = self._inner_buffer[size:]
+            return to_return
+
+        else:
+            raise Error(
+                "Unsupported compression method: "
+                + String(self.compression_method)
+            )
 
 
 struct ZipFileWriter[origin: Origin[mut=True]]:
@@ -127,7 +171,9 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
 
     fn write(mut self, data: Span[UInt8]) raises:
         if not self.open:
-            raise Error("File is closed. You must have called close() beforehand.")
+            raise Error(
+                "File is closed. You must have called close() beforehand."
+            )
         self.zipfile[].file.write_bytes(data)
         self.compressed_size += UInt64(len(data))
         self.uncompressed_size += UInt64(len(data))
@@ -135,7 +181,9 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
 
     fn close(mut self) raises:
         if not self.open:
-            raise Error("File is closed. You must have called close() beforehand.")
+            raise Error(
+                "File is closed. You must have called close() beforehand."
+            )
 
         # We need to write the crc32 and the compressed size
         self.local_file_header.crc32 = self.crc32.get_final_crc()
@@ -147,10 +195,16 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         old_position = self.zipfile[].file.seek(0, os.SEEK_CUR)
         _ = self.zipfile[].file.seek(self.crc32_position)
         write_zip_value(self.zipfile[].file, self.local_file_header.crc32)
-        write_zip_value(self.zipfile[].file, self.local_file_header.compressed_size)
-        write_zip_value(self.zipfile[].file, self.local_file_header.uncompressed_size)
+        write_zip_value(
+            self.zipfile[].file, self.local_file_header.compressed_size
+        )
+        write_zip_value(
+            self.zipfile[].file, self.local_file_header.uncompressed_size
+        )
         _ = self.zipfile[].file.seek(old_position)
-        self.zipfile[].central_directory_files_headers.append(CentralDirectoryFileHeader(self.local_file_header))
+        self.zipfile[].central_directory_files_headers.append(
+            CentralDirectoryFileHeader(self.local_file_header)
+        )
         self.open = False
 
     fn __del__(owned self):
@@ -158,7 +212,10 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             try:
                 self.close()
             except Error:
-                abort("Failed to close the file properly. You should call close() manually if you want to catch the error.")
+                abort(
+                    "Failed to close the file properly. You should call close()"
+                    " manually if you want to catch the error."
+                )
 
 
 # Negactive offsets are broken in Mojo for seek
@@ -259,7 +316,11 @@ struct ZipFile:
         _ = LocalFileHeader(self.file)
 
         return ZipFileReader(
-            Pointer(to=self.file), name._uncompressed_size, name._crc32.value()
+            Pointer(to=self.file),
+            name._compressed_size,
+            name._uncompressed_size,
+            name._compression_method,
+            name._crc32.value(),
         )
 
     fn open(
