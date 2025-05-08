@@ -1,6 +1,7 @@
 from sys import ffi
 from memory import memset_zero, UnsafePointer
 from sys import info, exit
+import sys
 
 alias Bytef = Scalar[DType.uint8]
 alias uLong = UInt64
@@ -24,7 +25,12 @@ struct ZStream:
     var adler: uLong
     var reserved: uLong
 
-alias inflateInit2_type = fn (strm: z_stream_ptr, windowBits: Int32) -> ffi.c_int
+alias inflateInit2_type = fn (
+    strm: z_stream_ptr,
+    windowBits: Int32,
+    version: UnsafePointer[UInt8],
+    stream_size: Int32
+) -> ffi.c_int
 alias inflate_type = fn (strm: z_stream_ptr, flush: ffi.c_int) -> ffi.c_int
 alias inflateEnd_type = fn (strm: z_stream_ptr) -> ffi.c_int
 
@@ -74,21 +80,30 @@ fn uncompress(data: List[UInt8], expected_uncompressed_size: Int, quiet: Bool = 
         adler = 0,
         reserved = 0,
     )
-
+    print("stream created")
     var out_buf = List[UInt8](capacity=expected_uncompressed_size)
     out_buf.resize(expected_uncompressed_size, 0)
 
     stream.next_out = out_buf.unsafe_ptr()
     stream.avail_out = UInt32(len(out_buf))
+    print("stream resized")
 
     # Use raw deflate by passing -15 as windowBits
-    var init_res = inflateInit2(UnsafePointer(to=stream), -15)
+    var zlib_version = String("1.2.11")  # Confirm this matches your libz version
+    var init_res = inflateInit2(
+    UnsafePointer(to=stream),
+    -15,  # raw deflate
+    zlib_version.unsafe_cstr_ptr().bitcast[UInt8](),
+    Int32(sys.sizeof[ZStream]())
+    )
+
+    print("stream initialized")
     if init_res != Z_OK:
         _log_zlib_result(init_res, compressing=False)
-
+    print("checked init result")
     var Z_RES = inflate_fn(UnsafePointer(to=stream), Z_FINISH)
     _ = inflateEnd(UnsafePointer(to=stream))
-
+    print("stream finished")
     if not quiet:
         _log_zlib_result(Z_RES, compressing=False)
 
