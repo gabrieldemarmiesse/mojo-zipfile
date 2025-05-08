@@ -9,10 +9,10 @@ alias zlib_type = fn (
     _out_len: UnsafePointer[UInt64],
     _in: UnsafePointer[Bytef],
     _in_len: uLong,
-) -> Int
+) -> ffi.c_int
 
 
-fn _log_zlib_result(Z_RES: Int, compressing: Bool = True) raises -> None:
+fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
     var prefix: String = ""
     if not compressing:
         prefix = "un"
@@ -37,24 +37,13 @@ fn _log_zlib_result(Z_RES: Int, compressing: Bool = True) raises -> None:
         )
     else:
         raise Error(
-            "ERROR " + prefix.upper() + "COMPRESSING: Unhandled exception"
+            "ERROR " + prefix.upper() + "COMPRESSING: Unhandled exception, got code " + String(Z_RES)
         )
 
 
-@parameter
-fn _dynamic_library_filepath(name: String) -> String:
-    if info.os_is_linux():
-        return name + ".so"
-    elif info.os_is_macos():
-        return name + ".dylib"
-    elif info.os_is_windows():
-        return name + ".dll"
-    else:
-        print("Unsupported os for dynamic library filepath determination")
-        return ""
 
 
-fn uncompress(data: List[UInt8], quiet: Bool = True) raises -> List[UInt8]:
+fn uncompress(data: List[UInt8],  expected_uncompressed_size: Int, quiet: Bool = False) raises -> List[UInt8]:
     """Uncompresses a zlib compressed byte List.
 
     Args:
@@ -67,25 +56,21 @@ fn uncompress(data: List[UInt8], quiet: Bool = True) raises -> List[UInt8]:
     Raises:
         Error: If the zlib operation fails.
     """
-    var data_memory_amount: Int = len(data) * 100
-    var handle = ffi.DLHandle(_dynamic_library_filepath("libz"))
+    var handle = ffi.DLHandle("/lib/x86_64-linux-gnu/libz.so")
     var zlib_uncompress = handle.get_function[zlib_type]("uncompress")
 
-    var uncompressed = UnsafePointer[Bytef].alloc(data_memory_amount)
-    var compressed = UnsafePointer[Bytef].alloc(len(data))
-    var uncompressed_len = UnsafePointer[uLong].alloc(1)
-    memset_zero(uncompressed, data_memory_amount)
-    memset_zero(uncompressed_len, 1)
-    uncompressed_len.init_pointee_copy(data_memory_amount)
-    for i in range(len(data)):
-        compressed.store(i, data[i])
+    var uncompressed = List[UInt8](capacity=expected_uncompressed_size)
+    uncompressed.resize(expected_uncompressed_size, 0)
+    var uncompressed_len = List[uLong](len(uncompressed))
 
     var Z_RES = zlib_uncompress(
-        uncompressed,
-        uncompressed_len,
-        compressed,
+        uncompressed.unsafe_ptr(),
+        uncompressed_len.unsafe_ptr(),
+        data.unsafe_ptr(),
         len(data),
     )
+    _ = data
+    print("uncompressed_len: ", uncompressed_len[0])
 
     if not quiet:
         _log_zlib_result(Z_RES, compressing=False)

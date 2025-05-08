@@ -148,10 +148,25 @@ def test_write_simple_hello_world_progressive_without_close():
     tests_helper.verify_hello_world_zip(file_path)
 
 
+def test_read_simple_hello_world_deflate():
+    file_path = "/tmp/hello.zip"
+    Python.add_to_path("./")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.create_hello_world_zip_with_deflate(file_path)
+
+    open_zip_mojo = zipfile.ZipFile(file_path, "r")
+    assert_equal(len(open_zip_mojo.infolist()), 1)
+    hello_file = open_zip_mojo.open("hello.txt", "r")
+    content = hello_file.read()
+    assert_equal(String(bytes=content), "hello world!")
+
+
 def main():
     test_is_zipfile_valid()
     test_identical_analysis()
     test_read_content()
     test_write_empty_zip()
     test_write_simple_hello_world()
+    test_write_simple_hello_world_progressive_without_close()
+    test_read_simple_hello_world_deflate()
     print("All tests passed!")
