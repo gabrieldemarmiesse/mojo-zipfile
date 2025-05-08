@@ -116,6 +116,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
             if self._is_at_start():
                 print("writing inner buffer")
                 # Let's write everything to the inner buffer in one go
+                print("compressed size: ", self.compressed_size)
                 self._inner_buffer = uncompress(
                     self.file[].read_bytes(Int(self.compressed_size)),
                     Int(self.uncompressed_size)

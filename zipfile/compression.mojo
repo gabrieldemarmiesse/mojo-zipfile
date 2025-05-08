@@ -4,12 +4,34 @@ from sys import info, exit
 
 alias Bytef = Scalar[DType.uint8]
 alias uLong = UInt64
-alias zlib_type = fn (
-    _out: UnsafePointer[Bytef],
-    _out_len: UnsafePointer[UInt64],
-    _in: UnsafePointer[Bytef],
-    _in_len: uLong,
-) -> ffi.c_int
+
+alias z_stream_ptr = UnsafePointer[ZStream]  # forward-declared below
+
+@value
+struct ZStream:
+    var next_in: UnsafePointer[Bytef]
+    var avail_in: UInt32
+    var total_in: uLong
+    var next_out: UnsafePointer[Bytef]
+    var avail_out: UInt32
+    var total_out: uLong
+    var msg: UnsafePointer[UInt8]
+    var state: UnsafePointer[UInt8]
+    var zalloc: UnsafePointer[UInt8]
+    var zfree: UnsafePointer[UInt8]
+    var opaque: UnsafePointer[UInt8]
+    var data_type: Int32
+    var adler: uLong
+    var reserved: uLong
+
+alias inflateInit2_type = fn (strm: z_stream_ptr, windowBits: Int32) -> ffi.c_int
+alias inflate_type = fn (strm: z_stream_ptr, flush: ffi.c_int) -> ffi.c_int
+alias inflateEnd_type = fn (strm: z_stream_ptr) -> ffi.c_int
+
+alias Z_OK: ffi.c_int = 0
+alias Z_STREAM_END: ffi.c_int = 1
+alias Z_NO_FLUSH: ffi.c_int = 0
+alias Z_FINISH: ffi.c_int = 4
 
 
 fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
@@ -17,65 +39,57 @@ fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
     if not compressing:
         prefix = "un"
 
-    if Z_RES == 0:
-        print(
-            "OK "
-            + prefix.upper()
-            + "COMPRESSING: Everything "
-            + prefix
-            + "compressed fine"
-        )
+    if Z_RES == Z_OK or Z_RES == Z_STREAM_END:
+        print("OK " + prefix.upper() + "COMPRESSING: Everything " + prefix + "compressed fine")
     elif Z_RES == -4:
-        raise Error(
-            "ERROR " + prefix.upper() + "COMPRESSING: Not enought memory"
-        )
+        raise Error("ERROR " + prefix.upper() + "COMPRESSING: Not enough memory")
     elif Z_RES == -5:
-        raise Error(
-            "ERROR "
-            + prefix.upper()
-            + "COMPRESSING: Buffer have not enough memory"
-        )
+        raise Error("ERROR " + prefix.upper() + "COMPRESSING: Buffer has not enough memory")
+    elif Z_RES == -3:
+        raise Error("ERROR " + prefix.upper() + "COMPRESSING: Data error (bad input format or corrupted)")
     else:
-        raise Error(
-            "ERROR " + prefix.upper() + "COMPRESSING: Unhandled exception, got code " + String(Z_RES)
-        )
+        raise Error("ERROR " + prefix.upper() + "COMPRESSING: Unhandled exception, got code " + String(Z_RES))
 
 
-
-
-fn uncompress(data: List[UInt8],  expected_uncompressed_size: Int, quiet: Bool = False) raises -> List[UInt8]:
-    """Uncompresses a zlib compressed byte List.
-
-    Args:
-        data: The zlib compressed byte List.
-        quiet: Whether to print the result of the zlib operation. Defaults to True.
-
-    Returns:
-        The uncompressed byte List.
-
-    Raises:
-        Error: If the zlib operation fails.
-    """
+fn uncompress(data: List[UInt8], expected_uncompressed_size: Int, quiet: Bool = False) raises -> List[UInt8]:
     var handle = ffi.DLHandle("/lib/x86_64-linux-gnu/libz.so")
-    var zlib_uncompress = handle.get_function[zlib_type]("uncompress")
 
-    var uncompressed = List[UInt8](capacity=expected_uncompressed_size)
-    uncompressed.resize(expected_uncompressed_size, 0)
-    var uncompressed_len = List[uLong](len(uncompressed))
+    var inflateInit2 = handle.get_function[inflateInit2_type]("inflateInit2_")
+    var inflate_fn = handle.get_function[inflate_type]("inflate")
+    var inflateEnd = handle.get_function[inflateEnd_type]("inflateEnd")
 
-    var Z_RES = zlib_uncompress(
-        uncompressed.unsafe_ptr(),
-        uncompressed_len.unsafe_ptr(),
-        data.unsafe_ptr(),
-        len(data),
+    var stream = ZStream(
+        next_in = data.unsafe_ptr(),
+        avail_in = UInt32(len(data)),
+        total_in = 0,
+        next_out = UnsafePointer[Bytef](),
+        avail_out = 0,
+        total_out = 0,
+        msg = UnsafePointer[UInt8](),
+        state = UnsafePointer[UInt8](),
+        zalloc = UnsafePointer[UInt8](),
+        zfree = UnsafePointer[UInt8](),
+        opaque = UnsafePointer[UInt8](),
+        data_type = 0,
+        adler = 0,
+        reserved = 0,
     )
-    _ = data
-    print("uncompressed_len: ", uncompressed_len[0])
+
+    var out_buf = List[UInt8](capacity=expected_uncompressed_size)
+    out_buf.resize(expected_uncompressed_size, 0)
+
+    stream.next_out = out_buf.unsafe_ptr()
+    stream.avail_out = UInt32(len(out_buf))
+
+    # Use raw deflate by passing -15 as windowBits
+    var init_res = inflateInit2(UnsafePointer(to=stream), -15)
+    if init_res != Z_OK:
+        _log_zlib_result(init_res, compressing=False)
+
+    var Z_RES = inflate_fn(UnsafePointer(to=stream), Z_FINISH)
+    _ = inflateEnd(UnsafePointer(to=stream))
 
     if not quiet:
         _log_zlib_result(Z_RES, compressing=False)
-    # Can probably do something more efficient here with pointers, but eh.
-    var res = List[UInt8]()
-    for i in range(uncompressed_len[0]):
-        res.append(uncompressed[i])
-    return res
+
+    return out_buf[:Int(stream.total_out)]
