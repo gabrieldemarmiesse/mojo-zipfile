@@ -119,7 +119,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 print("compressed size: ", self.compressed_size)
                 self._inner_buffer = uncompress(
                     self.file[].read_bytes(Int(self.compressed_size)),
-                    Int(self.uncompressed_size)
+                    Int(self.uncompressed_size),
                 )
                 print("inner buffer size: ", len(self._inner_buffer))
                 self.crc32.write(self._inner_buffer)
@@ -315,8 +315,14 @@ struct ZipFile:
     ) raises -> ZipFileReader[__origin_of(self.file)]:
         if mode != "r":
             raise Error("Only read mode is the only mode supported")
-        if name._compression_method != ZIP_STORED and name._compression_method != ZIP_DEFLATED:
-            raise Error("Only ZIP_STORED and ZIP_DEFLATED compression method is supported")
+        if (
+            name._compression_method != ZIP_STORED
+            and name._compression_method != ZIP_DEFLATED
+        ):
+            raise Error(
+                "Only ZIP_STORED and ZIP_DEFLATED compression method is"
+                " supported"
+            )
         # We need to seek to the start of the header
         _ = self.file.seek(name._start_of_header)
         _ = LocalFileHeader(self.file)
