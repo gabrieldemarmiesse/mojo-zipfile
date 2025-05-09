@@ -24,7 +24,7 @@ def test_is_zipfile_valid():
 def test_identical_analysis():
     Python.add_to_path("./")
     tests_helper = Python.import_module("tests_helper")
-    file_path = "/tmp/test.zip"
+    file_path = "/tmp/test8.zip"
     tests_helper.create_complicated_zip(file_path)
 
     open_zip_mojo = zipfile.ZipFile(file_path, "r")
@@ -71,7 +71,7 @@ def test_identical_analysis():
 def test_read_content():
     Python.add_to_path("./")
     tests_helper = Python.import_module("tests_helper")
-    file_path = "/tmp/dodo.zip"
+    file_path = "/tmp/dodo24.zip"
     tests_helper.create_hello_world_zip(file_path)
 
     open_zip_mojo = zipfile.ZipFile(file_path, "r")
@@ -93,8 +93,8 @@ def test_read_content():
 
 
 def test_write_empty_zip():
-    file_path = "/tmp/empty.zip"
-    other = "/tmp/empty2.zip"
+    file_path = "/tmp/empty55.zip"
+    other = "/tmp/empty882.zip"
     open_zip_mojo = zipfile.ZipFile(file_path, "w")
     open_zip_mojo.close()
 
@@ -108,7 +108,7 @@ def test_write_empty_zip():
 
 
 def test_write_simple_hello_world():
-    file_path = "/tmp/hello.zip"
+    file_path = "/tmp/hello777.zip"
     open_zip_mojo = zipfile.ZipFile(file_path, "w")
     open_zip_mojo.writestr("hello.txt", "hello world!")
     open_zip_mojo.close()
@@ -119,7 +119,7 @@ def test_write_simple_hello_world():
 
 
 def test_write_simple_hello_world_progressive_with_close():
-    file_path = "/tmp/hello.zip"
+    file_path = "/tmp/hello888.zip"
     open_zip_mojo = zipfile.ZipFile(file_path, "w")
     zip_entry = open_zip_mojo.open_to_write("hello.txt", "w")
     zip_entry.write(String("hello").as_bytes())
@@ -134,7 +134,7 @@ def test_write_simple_hello_world_progressive_with_close():
 
 
 def test_write_simple_hello_world_progressive_without_close():
-    file_path = "/tmp/hello.zip"
+    file_path = "/tmp/hello9999.zip"
     open_zip_mojo = zipfile.ZipFile(file_path, "w")
     zip_entry = open_zip_mojo.open_to_write("hello.txt", "w")
     zip_entry.write(String("hello").as_bytes())
@@ -149,7 +149,7 @@ def test_write_simple_hello_world_progressive_without_close():
 
 
 def test_read_simple_hello_world_deflate():
-    file_path = "/tmp/hello.zip"
+    file_path = "/tmp/hello7276.zip"
     Python.add_to_path("./")
     tests_helper = Python.import_module("tests_helper")
     tests_helper.create_hello_world_zip_with_deflate(file_path)
