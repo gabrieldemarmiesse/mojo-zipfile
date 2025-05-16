@@ -290,6 +290,7 @@ fn lemire_algorithm(owned w: UInt64, owned q: Int64) -> Float64:
     return create_float64(m, p)
 
 
+@no_inline
 fn _atof(x: StringSlice) raises -> Float64:
     """Parses the given string as a floating point and returns that value.
 
