@@ -151,7 +151,11 @@ fn uncompress(
     return out_buf[: Int(stream.total_out)]
 
 
-fn compress(data: List[UInt8], compresslevel: Int32 = Z_DEFAULT_COMPRESSION, quiet: Bool = False) raises -> List[UInt8]:
+fn compress(
+    data: List[UInt8],
+    compresslevel: Int32 = Z_DEFAULT_COMPRESSION,
+    quiet: Bool = False,
+) raises -> List[UInt8]:
     var handle = ffi.DLHandle("/lib/x86_64-linux-gnu/libz.so")
 
     var deflateInit2 = handle.get_function[deflateInit2_type]("deflateInit2_")

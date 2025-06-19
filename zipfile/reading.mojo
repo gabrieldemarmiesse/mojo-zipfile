@@ -216,7 +216,9 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             and len(self._uncompressed_buffer) > 0
         ):
             # Compress the accumulated data
-            compressed_data = compress(self._uncompressed_buffer, self._compresslevel, quiet=True)
+            compressed_data = compress(
+                self._uncompressed_buffer, self._compresslevel, quiet=True
+            )
             self.zipfile[].file.write_bytes(compressed_data)
             self.compressed_size = UInt64(len(compressed_data))
 
@@ -238,9 +240,15 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         )
         _ = self.zipfile[].file.seek(old_position)
         # Create central directory entry with correct header offset
-        var central_dir_header = CentralDirectoryFileHeader(self.local_file_header)
-        central_dir_header.relative_offset_of_local_header = UInt32(self._header_offset)
-        self.zipfile[].central_directory_files_headers.append(central_dir_header)
+        var central_dir_header = CentralDirectoryFileHeader(
+            self.local_file_header
+        )
+        central_dir_header.relative_offset_of_local_header = UInt32(
+            self._header_offset
+        )
+        self.zipfile[].central_directory_files_headers.append(
+            central_dir_header
+        )
         self.open = False
 
     fn __del__(owned self):
@@ -387,7 +395,9 @@ struct ZipFile:
                 "Only ZIP_STORED and ZIP_DEFLATED compression methods are"
                 " supported"
             )
-        return ZipFileWriter(Pointer(to=self), name, mode, compression_method, compresslevel)
+        return ZipFileWriter(
+            Pointer(to=self), name, mode, compression_method, compresslevel
+        )
 
     fn writestr(
         mut self,
@@ -397,7 +407,9 @@ struct ZipFile:
         compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
     ) raises:
         # Some streaming would be nice here
-        file_handle = self.open_to_write(arcname, "w", compression_method, compresslevel)
+        file_handle = self.open_to_write(
+            arcname, "w", compression_method, compresslevel
+        )
         file_handle.write(data.as_bytes())
         file_handle.close()
 
