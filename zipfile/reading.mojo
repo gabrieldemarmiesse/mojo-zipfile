@@ -14,7 +14,7 @@ from .metadata import (
     GeneralPurposeBitFlag,
 )
 import os
-from .crc_32 import CRC32
+from .zlib import CRC32
 from .zlib.compression import uncompress, compress, StreamingDecompressor
 from utils import Variant
 
