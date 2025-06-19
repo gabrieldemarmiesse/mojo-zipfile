@@ -2,6 +2,7 @@ from sys import ffi
 from memory import memset_zero, UnsafePointer
 from sys import info, exit
 import sys
+import os
 
 alias Bytef = Scalar[DType.uint8]
 alias uLong = UInt64
@@ -68,6 +69,14 @@ alias Z_DEFLATED: Int32 = 8
 alias Z_DEFAULT_STRATEGY: Int32 = 0
 
 
+fn _get_libz_path() raises -> String:
+    """Get the path to libz.so, preferring conda environment if available."""
+    var conda_prefix = os.getenv("CONDA_PREFIX", "")
+    if conda_prefix != "":
+        return conda_prefix + "/lib/libz.so"
+    raise Error("Could not find libz.so in the conda environment.")
+
+
 fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
     var prefix: String = ""
     if not compressing:
@@ -103,7 +112,7 @@ fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
 fn uncompress(
     data: List[UInt8], expected_uncompressed_size: Int, quiet: Bool = False
 ) raises -> List[UInt8]:
-    var handle = ffi.DLHandle("/lib/x86_64-linux-gnu/libz.so")
+    var handle = ffi.DLHandle(_get_libz_path())
 
     var inflateInit2 = handle.get_function[inflateInit2_type]("inflateInit2_")
     var inflate_fn = handle.get_function[inflate_type]("inflate")
@@ -168,7 +177,7 @@ struct StreamingDecompressor(Copyable, Movable):
     var output_available: Int
 
     fn __init__(out self) raises:
-        self.handle = ffi.DLHandle("/lib/x86_64-linux-gnu/libz.so")
+        self.handle = ffi.DLHandle(_get_libz_path())
         self.inflate_fn = self.handle.get_function[inflate_type]("inflate")
         self.inflateEnd = self.handle.get_function[inflateEnd_type](
             "inflateEnd"
@@ -350,7 +359,7 @@ fn compress(
     compresslevel: Int32 = Z_DEFAULT_COMPRESSION,
     quiet: Bool = False,
 ) raises -> List[UInt8]:
-    var handle = ffi.DLHandle("/lib/x86_64-linux-gnu/libz.so")
+    var handle = ffi.DLHandle(_get_libz_path())
 
     var deflateInit2 = handle.get_function[deflateInit2_type]("deflateInit2_")
     var deflate_fn = handle.get_function[deflate_type]("deflate")
