@@ -53,8 +53,8 @@ struct CRC32:
         crc.write(data)
         return crc.get_final_crc()
 
-    fn __init__(out self):
-        self._internal_value = 0xFFFFFFFF
+    fn __init__(out self, value: UInt32 = 0):
+        self._internal_value = ~value  # CRC-32 starts with 0xFFFFFFFF
 
     fn write(mut self, data: Span[UInt8]):
         for byte in data:
@@ -76,8 +76,7 @@ fn crc32(data: Span[UInt8], value: UInt32 = 0) -> UInt32:
     Returns:
         An unsigned 32-bit integer representing the CRC-32 checksum
     """
-    var crc32_struct = CRC32()
+    var crc32_struct = CRC32(value)
     # Set initial value if provided (inverted because CRC32 starts with 0xFFFFFFFF)
-    crc32_struct._internal_value = ~value
     crc32_struct.write(data)
     return crc32_struct.get_final_crc()
