@@ -216,7 +216,7 @@ def test_compression_level_constants():
         "test.txt",
         test_data,
         zipfile.ZIP_DEFLATED,
-        compresslevel=zipfile.Z_BEST_SPEED,
+        compresslevel=zipfile.zlib.compression.Z_BEST_SPEED,
     )
     zip_speed.close()
 
@@ -227,7 +227,7 @@ def test_compression_level_constants():
         "test.txt",
         test_data,
         zipfile.ZIP_DEFLATED,
-        compresslevel=zipfile.Z_BEST_COMPRESSION,
+        compresslevel=zipfile.zlib.compression.Z_BEST_COMPRESSION,
     )
     zip_compression.close()
 
@@ -238,7 +238,7 @@ def test_compression_level_constants():
         "test.txt",
         test_data,
         zipfile.ZIP_DEFLATED,
-        compresslevel=zipfile.Z_DEFAULT_COMPRESSION,
+        compresslevel=zipfile.zlib.compression.Z_DEFAULT_COMPRESSION,
     )
     zip_default.close()
 
