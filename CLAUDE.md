@@ -54,3 +54,7 @@ Tests use Python's zipfile module to create reference ZIP files and verify compa
 - The library assumes no ZIP file comments for simplicity (can be extended later)
 - CRC-32 verification is mandatory and automatically performed during read operations
 - File writing uses progressive approach with automatic CRC/size backfilling
+
+## Additional information about Mojo
+Since the Mojo language is pretty new, the Mojo repository can be found in `modular/` with a memory file at @modular/CLAUDE.md . The files in the `modular/` directory should never be updated and are only here as a reference to understand how the Mojo language works.
+
