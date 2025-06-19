@@ -145,6 +145,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
     var open: Bool
     var _uncompressed_buffer: List[UInt8]  # Buffer for deflate compression
     var _compresslevel: Int32  # Compression level for deflate
+    var _header_offset: UInt64  # Position where the local file header was written
 
     fn __init__(
         out self,
@@ -172,7 +173,8 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         self.crc32 = CRC32()
         self.compressed_size = 0
         self.uncompressed_size = 0
-        self.crc32_position = self.zipfile[].file.seek(0, os.SEEK_CUR) + 14
+        self._header_offset = self.zipfile[].file.seek(0, os.SEEK_CUR)
+        self.crc32_position = self._header_offset + 14
         _ = self.local_file_header.write_to_file(self.zipfile[].file)
         self.open = True
         self._uncompressed_buffer = List[UInt8]()
@@ -237,8 +239,11 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             self.zipfile[].file, self.local_file_header.uncompressed_size
         )
         _ = self.zipfile[].file.seek(old_position)
+        # Create central directory entry with correct header offset
         self.zipfile[].central_directory_files_headers.append(
-            CentralDirectoryFileHeader(self.local_file_header)
+            CentralDirectoryFileHeader(
+                self.local_file_header, UInt32(self._header_offset)
+            )
         )
         self.open = False
 
@@ -403,6 +408,11 @@ struct ZipFile:
         )
         file_handle.write(data.as_bytes())
         file_handle.close()
+
+    fn read(mut self, name: String) raises -> List[UInt8]:
+        """Read and return the bytes of a file in the archive."""
+        file_reader = self.open(name, "r")
+        return file_reader.read()
 
     fn getinfo(mut self, name: String) raises -> ZipInfo:
         # We need to seek to the start of the header
