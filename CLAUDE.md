@@ -10,7 +10,7 @@ This is a Mojo implementation of a ZIP file library that follows the Python zipf
 
 ### Running Tests
 ```bash
-pixi run tests
+pixi run test
 ```
 
 ## Architecture
