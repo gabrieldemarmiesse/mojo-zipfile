@@ -10,13 +10,7 @@ This is a Mojo implementation of a ZIP file library that follows the Python zipf
 
 ### Running Tests
 ```bash
-mojo test_something.mojo
-```
-
-### Build and Development
-The project uses Magic package manager (mojoproject.toml). Install dependencies with:
-```bash
-magic install
+pixi run tests
 ```
 
 ## Architecture
