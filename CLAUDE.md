@@ -1,0 +1,56 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is a Mojo implementation of a ZIP file library that follows the Python zipfile API but with reduced feature set. The library focuses on ZIP_STORED and ZIP_DEFLATED compression methods and implements basic reading and writing functionality.
+
+## Development Commands
+
+### Running Tests
+```bash
+mojo test_something.mojo
+```
+
+### Build and Development
+The project uses Magic package manager (mojoproject.toml). Install dependencies with:
+```bash
+magic install
+```
+
+## Architecture
+
+### Core Components
+
+- **zipfile/__init__.mojo**: Main entry point exposing `is_zipfile()` and `ZipFile` class
+- **zipfile/reading.mojo**: Core ZIP file reading/writing logic with `ZipFile`, `ZipFileReader`, and `ZipFileWriter` structs
+- **zipfile/metadata.mojo**: ZIP file format structures (LocalFileHeader, CentralDirectoryFileHeader, etc.)
+- **zipfile/compression.mojo**: Deflate decompression using system zlib (currently read-only)
+- **zipfile/crc_32.mojo**: CRC-32 implementation for data integrity verification
+- **zipfile/read_write_values.mojo**: Binary data serialization utilities
+- **zipfile/utils.mojo**: Utility functions like list comparison
+
+### Key Design Patterns
+
+1. **Python API Compatibility**: Mirrors Python's zipfile module interface (`ZipFile`, `open()`, `writestr()`, etc.)
+2. **Streaming Support**: `ZipFileReader` and `ZipFileWriter` provide progressive read/write capabilities
+3. **Memory Safety**: Uses Mojo's ownership system with proper resource cleanup via `__del__` and context managers
+4. **FFI Integration**: Leverages system zlib via foreign function interface for deflate compression
+
+### Compression Support
+
+- **ZIP_STORED** (0): Uncompressed - fully implemented for read/write
+- **ZIP_DEFLATED** (8): Deflate compression - read-only, uses system libz.so
+- Other compression methods are not supported
+
+### Testing Strategy
+
+Tests use Python's zipfile module to create reference ZIP files and verify compatibility. The `tests_helper.py` provides utilities for creating test ZIP files with different compression methods.
+
+## Important Implementation Notes
+
+- Negative file seek offsets are broken in Mojo, affecting some ZIP format operations
+- The library assumes no ZIP file comments for simplicity (can be extended later)
+- CRC-32 verification is mandatory and automatically performed during read operations
+- File writing uses progressive approach with automatic CRC/size backfilling

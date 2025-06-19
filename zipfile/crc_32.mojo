@@ -35,7 +35,7 @@ struct CRC32:
     fn write(mut self, data: Span[UInt8]):
         for byte in data:
             self._internal_value = CRC32Table[
-                (self._internal_value ^ UInt32(byte[])) & UInt32(0xFF)
+                (self._internal_value ^ UInt32(byte)) & UInt32(0xFF)
             ] ^ (self._internal_value >> 8)
 
     fn get_final_crc(self) -> UInt32:

@@ -300,7 +300,7 @@ struct ZipFile:
             )
 
             for header in self.central_directory_files_headers:
-                _ = header[].write_to_file(self.file)
+                _ = header.write_to_file(self.file)
 
             self.end_of_central_directory.size_of_the_central_directory = UInt32(
                 UInt32(self.file.seek(0, os.SEEK_CUR))
