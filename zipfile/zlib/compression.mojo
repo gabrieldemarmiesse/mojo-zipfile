@@ -72,9 +72,12 @@ alias Z_DEFAULT_STRATEGY: Int32 = 0
 fn _get_libz_path() raises -> String:
     """Get the path to libz.so, preferring conda environment if available."""
     var conda_prefix = os.getenv("CONDA_PREFIX", "")
-    if conda_prefix != "":
-        return conda_prefix + "/lib/libz.so"
-    raise Error("Could not find libz.so in the conda environment.")
+    if conda_prefix == "":
+        raise Error(
+            "CONDA_PREFIX is not set. Did you forget to activate the"
+            " environment?"
+        )
+    return conda_prefix + "/lib/libz.so"
 
 
 fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
