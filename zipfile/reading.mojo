@@ -149,6 +149,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
     var crc32_position: UInt64
     var open: Bool
     var _uncompressed_buffer: List[UInt8]  # Buffer for deflate compression
+    var _compresslevel: Int32  # Compression level for deflate
 
     fn __init__(
         out self,
@@ -156,6 +157,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         name: String,
         mode: String,
         compression_method: UInt16,
+        compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
     ) raises:
         self.zipfile = zipfile
         self.local_file_header = LocalFileHeader(
@@ -179,6 +181,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         _ = self.local_file_header.write_to_file(self.zipfile[].file)
         self.open = True
         self._uncompressed_buffer = List[UInt8]()
+        self._compresslevel = compresslevel
 
     fn write(mut self, data: Span[UInt8]) raises:
         if not self.open:
@@ -216,7 +219,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             and len(self._uncompressed_buffer) > 0
         ):
             # Compress the accumulated data
-            compressed_data = compress(self._uncompressed_buffer, quiet=True)
+            compressed_data = compress(self._uncompressed_buffer, self._compresslevel, quiet=True)
             self.zipfile[].file.write_bytes(compressed_data)
             self.compressed_size = UInt64(len(compressed_data))
 
@@ -374,6 +377,7 @@ struct ZipFile:
         name: String,
         mode: String,
         compression_method: UInt16 = ZIP_STORED,
+        compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
     ) raises -> ZipFileWriter[__origin_of(self)]:
         if mode != "w":
             raise Error("Only write mode is the only mode supported")
@@ -385,16 +389,17 @@ struct ZipFile:
                 "Only ZIP_STORED and ZIP_DEFLATED compression methods are"
                 " supported"
             )
-        return ZipFileWriter(Pointer(to=self), name, mode, compression_method)
+        return ZipFileWriter(Pointer(to=self), name, mode, compression_method, compresslevel)
 
     fn writestr(
         mut self,
         arcname: String,
         data: String,
         compression_method: UInt16 = ZIP_STORED,
+        compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
     ) raises:
         # Some streaming would be nice here
-        file_handle = self.open_to_write(arcname, "w", compression_method)
+        file_handle = self.open_to_write(arcname, "w", compression_method, compresslevel)
         file_handle.write(data.as_bytes())
         file_handle.close()
 

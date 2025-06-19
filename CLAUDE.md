@@ -35,8 +35,25 @@ pixi run tests
 ### Compression Support
 
 - **ZIP_STORED** (0): Uncompressed - fully implemented for read/write
-- **ZIP_DEFLATED** (8): Deflate compression - fully implemented for read/write, uses system libz.so
+- **ZIP_DEFLATED** (8): Deflate compression - fully implemented for read/write with compression level control, uses system libz.so
 - Other compression methods are not supported
+
+### Compression Level API
+
+Following Python's zipfile API (version 3.7+), the library supports compression levels:
+
+- **Compression Level Range**: 0-9 for ZIP_DEFLATED (0=no compression, 9=best compression)
+- **Default Level**: -1 (Z_DEFAULT_COMPRESSION, equivalent to level 6)
+- **Constants Available**: `Z_BEST_SPEED` (1), `Z_DEFAULT_COMPRESSION` (-1), `Z_BEST_COMPRESSION` (9)
+
+**API Examples:**
+```mojo
+# Using compression level in writestr
+zip_file.writestr("file.txt", data, zipfile.ZIP_DEFLATED, compresslevel=zipfile.Z_BEST_COMPRESSION)
+
+# Using compression level in open_to_write  
+writer = zip_file.open_to_write("file.txt", "w", zipfile.ZIP_DEFLATED, compresslevel=9)
+```
 
 ### Testing Strategy
 
