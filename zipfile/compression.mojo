@@ -73,13 +73,7 @@ fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
         prefix = "un"
 
     if Z_RES == Z_OK or Z_RES == Z_STREAM_END:
-        print(
-            "OK "
-            + prefix.upper()
-            + "COMPRESSING: Everything "
-            + prefix
-            + "compressed fine"
-        )
+        pass
     elif Z_RES == -4:
         raise Error(
             "ERROR " + prefix.upper() + "COMPRESSING: Not enough memory"
@@ -130,13 +124,11 @@ fn uncompress(
         adler=0,
         reserved=0,
     )
-    print("stream created")
     var out_buf = List[UInt8](capacity=expected_uncompressed_size)
     out_buf.resize(expected_uncompressed_size, 0)
 
     stream.next_out = out_buf.unsafe_ptr()
     stream.avail_out = UInt32(len(out_buf))
-    print("stream resized")
 
     # Use raw deflate by passing -15 as windowBits
     var zlib_version = String(
@@ -149,13 +141,10 @@ fn uncompress(
         Int32(sys.sizeof[ZStream]()),
     )
 
-    print("stream initialized")
     if init_res != Z_OK:
         _log_zlib_result(init_res, compressing=False)
-    print("checked init result")
     var Z_RES = inflate_fn(UnsafePointer(to=stream), Z_FINISH)
     _ = inflateEnd(UnsafePointer(to=stream))
-    print("stream finished")
     if not quiet:
         _log_zlib_result(Z_RES, compressing=False)
 

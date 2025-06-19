@@ -363,6 +363,54 @@ def test_compression_level_constants():
     
 
 
+def test_read_method():
+    # Test the read() method which should work like Python's zipfile.read()
+    test_data = "Hello, this is test data for the read() method!"
+    file_path = "/tmp/test_read_method.zip"
+    
+    # Create a zip file with some test data, both stored and deflated
+    zip_write = zipfile.ZipFile(file_path, "w")
+    zip_write.writestr("test1.txt", test_data)  # ZIP_STORED
+    zip_write.writestr("test2.txt", "Different content", zipfile.ZIP_DEFLATED, compresslevel=6)  # ZIP_DEFLATED
+    zip_write.close()
+    
+    # Test reading the files using the read() method
+    zip_read = zipfile.ZipFile(file_path, "r")
+    
+    # Read first file (stored)
+    content1 = zip_read.read("test1.txt")
+    assert_equal(String(bytes=content1), test_data)
+    
+    # Read second file (deflated)
+    content2 = zip_read.read("test2.txt")
+    assert_equal(String(bytes=content2), "Different content")
+    
+    # Read first file again to test if multiple reads work
+    content1_again = zip_read.read("test1.txt")
+    assert_equal(String(bytes=content1_again), test_data)
+    
+    # Test error case for non-existent file
+    try:
+        _ = zip_read.read("nonexistent.txt")
+        assert_true(False, "Should have raised an error for non-existent file")
+    except Error:
+        pass  # Expected behavior
+    
+    zip_read.close()
+    
+    # Verify compatibility with Python's zipfile
+    Python.add_to_path("./")
+    py_zipfile = Python.import_module("zipfile")
+    py_zip = py_zipfile.ZipFile(file_path, "r")
+    py_content1 = py_zip.read("test1.txt")
+    py_content2 = py_zip.read("test2.txt")
+    py_zip.close()
+    
+    # Compare results with Python
+    assert_equal(String(py_content1.decode("utf-8")), test_data)
+    assert_equal(String(py_content2.decode("utf-8")), "Different content")
+
+
 def main():
     test_is_zipfile_valid()
     test_identical_analysis()
@@ -377,3 +425,4 @@ def main():
     test_compression_levels()
     test_compression_level_progressive_write()
     test_compression_level_constants()
+    test_read_method()
