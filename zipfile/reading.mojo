@@ -151,7 +151,11 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
     var _uncompressed_buffer: List[UInt8]  # Buffer for deflate compression
 
     fn __init__(
-        out self, zipfile: Pointer[ZipFile, origin], name: String, mode: String, compression_method: UInt16 = ZIP_STORED
+        out self,
+        zipfile: Pointer[ZipFile, origin],
+        name: String,
+        mode: String,
+        compression_method: UInt16,
     ) raises:
         self.zipfile = zipfile
         self.local_file_header = LocalFileHeader(
@@ -181,11 +185,11 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             raise Error(
                 "File is closed. You must have called close() beforehand."
             )
-        
+
         # Update CRC32 and uncompressed size regardless of compression method
         self.crc32.write(data)
         self.uncompressed_size += UInt64(len(data))
-        
+
         if self.local_file_header.compression_method == ZIP_STORED:
             # For stored (uncompressed), write directly to file
             self.zipfile[].file.write_bytes(data)
@@ -195,7 +199,10 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             for byte in data:
                 self._uncompressed_buffer.append(byte)
         else:
-            raise Error("Unsupported compression method: " + String(self.local_file_header.compression_method))
+            raise Error(
+                "Unsupported compression method: "
+                + String(self.local_file_header.compression_method)
+            )
 
     fn close(mut self) raises:
         if not self.open:
@@ -204,7 +211,10 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             )
 
         # Handle compression for deflate method
-        if self.local_file_header.compression_method == ZIP_DEFLATED and len(self._uncompressed_buffer) > 0:
+        if (
+            self.local_file_header.compression_method == ZIP_DEFLATED
+            and len(self._uncompressed_buffer) > 0
+        ):
             # Compress the accumulated data
             compressed_data = compress(self._uncompressed_buffer, quiet=True)
             self.zipfile[].file.write_bytes(compressed_data)
@@ -360,15 +370,29 @@ struct ZipFile:
         return self.open(self.getinfo(name), mode)
 
     fn open_to_write(
-        mut self, name: String, mode: String, compression_method: UInt16 = ZIP_STORED
+        mut self,
+        name: String,
+        mode: String,
+        compression_method: UInt16 = ZIP_STORED,
     ) raises -> ZipFileWriter[__origin_of(self)]:
         if mode != "w":
             raise Error("Only write mode is the only mode supported")
-        if compression_method != ZIP_STORED and compression_method != ZIP_DEFLATED:
-            raise Error("Only ZIP_STORED and ZIP_DEFLATED compression methods are supported")
+        if (
+            compression_method != ZIP_STORED
+            and compression_method != ZIP_DEFLATED
+        ):
+            raise Error(
+                "Only ZIP_STORED and ZIP_DEFLATED compression methods are"
+                " supported"
+            )
         return ZipFileWriter(Pointer(to=self), name, mode, compression_method)
 
-    fn writestr(mut self, arcname: String, data: String, compression_method: UInt16 = ZIP_STORED) raises:
+    fn writestr(
+        mut self,
+        arcname: String,
+        data: String,
+        compression_method: UInt16 = ZIP_STORED,
+    ) raises:
         # Some streaming would be nice here
         file_handle = self.open_to_write(arcname, "w", compression_method)
         file_handle.write(data.as_bytes())

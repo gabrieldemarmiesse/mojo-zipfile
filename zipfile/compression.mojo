@@ -8,6 +8,7 @@ alias uLong = UInt64
 
 alias z_stream_ptr = UnsafePointer[ZStream]  # forward-declared below
 
+
 # Cleaner than declaring an __init__()
 @fieldwise_init
 struct ZStream(Copyable, Movable):
@@ -25,6 +26,7 @@ struct ZStream(Copyable, Movable):
     var data_type: Int32
     var adler: uLong
     var reserved: uLong
+
 
 alias inflateInit2_type = fn (
     strm: z_stream_ptr,
@@ -197,10 +199,10 @@ fn compress(data: List[UInt8], quiet: Bool = False) raises -> List[UInt8]:
     var init_res = deflateInit2(
         UnsafePointer(to=stream),
         Z_DEFAULT_COMPRESSION,  # compression level
-        Z_DEFLATED,            # method
-        -15,                   # raw deflate (negative windowBits)
-        8,                     # memLevel
-        Z_DEFAULT_STRATEGY,    # strategy
+        Z_DEFLATED,  # method
+        -15,  # raw deflate (negative windowBits)
+        8,  # memLevel
+        Z_DEFAULT_STRATEGY,  # strategy
         zlib_version.unsafe_cstr_ptr().bitcast[UInt8](),
         Int32(sys.sizeof[ZStream]()),
     )
@@ -211,7 +213,7 @@ fn compress(data: List[UInt8], quiet: Bool = False) raises -> List[UInt8]:
 
     var Z_RES = deflate_fn(UnsafePointer(to=stream), Z_FINISH)
     _ = deflateEnd(UnsafePointer(to=stream))
-    
+
     if not quiet:
         _log_zlib_result(Z_RES, compressing=True)
 

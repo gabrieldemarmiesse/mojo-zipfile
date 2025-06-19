@@ -184,7 +184,9 @@ def test_write_simple_hello_world_deflate():
 def test_write_simple_hello_world_deflate_progressive():
     file_path = "/tmp/hello_deflate_progressive_mojo.zip"
     open_zip_mojo = zipfile.ZipFile(file_path, "w")
-    zip_entry = open_zip_mojo.open_to_write("hello.txt", "w", zipfile.ZIP_DEFLATED)
+    zip_entry = open_zip_mojo.open_to_write(
+        "hello.txt", "w", zipfile.ZIP_DEFLATED
+    )
     zip_entry.write(String("hello").as_bytes())
     zip_entry.write(String(" wo").as_bytes())
     zip_entry.write(String("rld!").as_bytes())
@@ -208,13 +210,13 @@ def test_write_simple_hello_world_deflate_progressive():
 def test_deflate_compression_ratio():
     # Test that deflate actually compresses repetitive data
     large_data = "A" * 1000  # 1000 'A' characters should compress well
-    
+
     # Write with ZIP_STORED (no compression)
     stored_file = "/tmp/large_stored.zip"
     zip_stored = zipfile.ZipFile(stored_file, "w")
     zip_stored.writestr("large.txt", large_data, zipfile.ZIP_STORED)
     zip_stored.close()
-    
+
     # Write with ZIP_DEFLATED (compression)
     deflated_file = "/tmp/large_deflated.zip"
     zip_deflated = zipfile.ZipFile(deflated_file, "w")
@@ -223,15 +225,19 @@ def test_deflate_compression_ratio():
 
     # Read file sizes
     from pathlib import Path
+
     stored_size = len(Path(stored_file).read_bytes())
     deflated_size = len(Path(deflated_file).read_bytes())
-    
+
     # Deflated should be significantly smaller for repetitive data
     print("Stored size:", stored_size)
     print("Deflated size:", deflated_size)
     print("Compression ratio:", Float64(stored_size) / Float64(deflated_size))
-    assert_true(deflated_size < stored_size, "Deflated file should be smaller than stored file")
-    
+    assert_true(
+        deflated_size < stored_size,
+        "Deflated file should be smaller than stored file",
+    )
+
     # Verify content is the same when reading back
     zip_read = zipfile.ZipFile(deflated_file, "r")
     file_reader = zip_read.open("large.txt", "r")
