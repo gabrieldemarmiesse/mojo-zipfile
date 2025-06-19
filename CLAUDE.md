@@ -35,7 +35,7 @@ pixi run tests
 ### Compression Support
 
 - **ZIP_STORED** (0): Uncompressed - fully implemented for read/write
-- **ZIP_DEFLATED** (8): Deflate compression - read-only, uses system libz.so
+- **ZIP_DEFLATED** (8): Deflate compression - fully implemented for read/write, uses system libz.so
 - Other compression methods are not supported
 
 ### Testing Strategy

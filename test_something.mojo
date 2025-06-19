@@ -161,6 +161,85 @@ def test_read_simple_hello_world_deflate():
     assert_equal(String(bytes=content), "hello world!")
 
 
+def test_write_simple_hello_world_deflate():
+    file_path = "/tmp/hello_deflate_mojo.zip"
+    open_zip_mojo = zipfile.ZipFile(file_path, "w")
+    open_zip_mojo.writestr("hello.txt", "hello world!", zipfile.ZIP_DEFLATED)
+    open_zip_mojo.close()
+
+    # Verify using Python zipfile
+    Python.add_to_path("./")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.verify_hello_world_zip(file_path)
+
+    # Also verify we can read it back with Mojo
+    open_zip_mojo_read = zipfile.ZipFile(file_path, "r")
+    assert_equal(len(open_zip_mojo_read.infolist()), 1)
+    hello_file = open_zip_mojo_read.open("hello.txt", "r")
+    content = hello_file.read()
+    assert_equal(String(bytes=content), "hello world!")
+    open_zip_mojo_read.close()
+
+
+def test_write_simple_hello_world_deflate_progressive():
+    file_path = "/tmp/hello_deflate_progressive_mojo.zip"
+    open_zip_mojo = zipfile.ZipFile(file_path, "w")
+    zip_entry = open_zip_mojo.open_to_write("hello.txt", "w", zipfile.ZIP_DEFLATED)
+    zip_entry.write(String("hello").as_bytes())
+    zip_entry.write(String(" wo").as_bytes())
+    zip_entry.write(String("rld!").as_bytes())
+    zip_entry.close()
+    open_zip_mojo.close()
+
+    # Verify using Python zipfile
+    Python.add_to_path("./")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.verify_hello_world_zip(file_path)
+
+    # Also verify we can read it back with Mojo
+    open_zip_mojo_read = zipfile.ZipFile(file_path, "r")
+    assert_equal(len(open_zip_mojo_read.infolist()), 1)
+    hello_file = open_zip_mojo_read.open("hello.txt", "r")
+    content = hello_file.read()
+    assert_equal(String(bytes=content), "hello world!")
+    open_zip_mojo_read.close()
+
+
+def test_deflate_compression_ratio():
+    # Test that deflate actually compresses repetitive data
+    large_data = "A" * 1000  # 1000 'A' characters should compress well
+    
+    # Write with ZIP_STORED (no compression)
+    stored_file = "/tmp/large_stored.zip"
+    zip_stored = zipfile.ZipFile(stored_file, "w")
+    zip_stored.writestr("large.txt", large_data, zipfile.ZIP_STORED)
+    zip_stored.close()
+    
+    # Write with ZIP_DEFLATED (compression)
+    deflated_file = "/tmp/large_deflated.zip"
+    zip_deflated = zipfile.ZipFile(deflated_file, "w")
+    zip_deflated.writestr("large.txt", large_data, zipfile.ZIP_DEFLATED)
+    zip_deflated.close()
+
+    # Read file sizes
+    from pathlib import Path
+    stored_size = len(Path(stored_file).read_bytes())
+    deflated_size = len(Path(deflated_file).read_bytes())
+    
+    # Deflated should be significantly smaller for repetitive data
+    print("Stored size:", stored_size)
+    print("Deflated size:", deflated_size)
+    print("Compression ratio:", Float64(stored_size) / Float64(deflated_size))
+    assert_true(deflated_size < stored_size, "Deflated file should be smaller than stored file")
+    
+    # Verify content is the same when reading back
+    zip_read = zipfile.ZipFile(deflated_file, "r")
+    file_reader = zip_read.open("large.txt", "r")
+    content = file_reader.read()
+    assert_equal(String(bytes=content), large_data)
+    zip_read.close()
+
+
 def main():
     test_is_zipfile_valid()
     test_identical_analysis()
@@ -169,4 +248,7 @@ def main():
     test_write_simple_hello_world()
     test_write_simple_hello_world_progressive_without_close()
     test_read_simple_hello_world_deflate()
+    test_write_simple_hello_world_deflate()
+    test_write_simple_hello_world_deflate_progressive()
+    test_deflate_compression_ratio()
     print("All tests passed!")
