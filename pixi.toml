@@ -12,3 +12,4 @@ format = "mojo format"
 [dependencies]
 max = ">=25.3.0.dev2025042605"
 pre-commit = ">=4.2.0,<5"
+zlib = "*"
