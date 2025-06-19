@@ -1,5 +1,5 @@
 import zipfile
-from testing import assert_equal, assert_true
+from testing import assert_equal, assert_true, assert_raises
 from python import Python
 from pathlib import Path
 
@@ -426,11 +426,8 @@ def test_read_method():
     assert_equal(String(bytes=content1_again), test_data)
 
     # Test error case for non-existent file
-    try:
+    with assert_raises(contains="File nonexistent.txt not found in zip file"):
         _ = zip_read.read("nonexistent.txt")
-        assert_true(False, "Should have raised an error for non-existent file")
-    except Error:
-        pass  # Expected behavior
 
     zip_read.close()
 
