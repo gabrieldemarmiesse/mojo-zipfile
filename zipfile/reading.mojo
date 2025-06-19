@@ -97,7 +97,6 @@ struct ZipFileReader[origin: Origin[mut=True]]:
 
     fn read(mut self, owned size: Int = -1) raises -> List[UInt8]:
         if self.compression_method == ZIP_STORED:
-            print("ZIP_STORED")
             if size == -1:
                 size = self._remaining_size()
             else:
@@ -111,16 +110,12 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 self._check_crc32()
             return bytes
         elif self.compression_method == ZIP_DEFLATED:
-            print("ZIP_DEFLATED")
             if self._is_at_start():
-                print("writing inner buffer")
                 # Let's write everything to the inner buffer in one go
-                print("compressed size: ", self.compressed_size)
                 self._inner_buffer = uncompress(
                     self.file[].read_bytes(Int(self.compressed_size)),
                     Int(self.uncompressed_size),
                 )
-                print("inner buffer size: ", len(self._inner_buffer))
                 self.crc32.write(self._inner_buffer)
                 self._check_crc32()
 
@@ -219,7 +214,9 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             and len(self._uncompressed_buffer) > 0
         ):
             # Compress the accumulated data
-            compressed_data = compress(self._uncompressed_buffer, self._compresslevel, quiet=True)
+            compressed_data = compress(
+                self._uncompressed_buffer, self._compresslevel, quiet=True
+            )
             self.zipfile[].file.write_bytes(compressed_data)
             self.compressed_size = UInt64(len(compressed_data))
 
@@ -389,7 +386,9 @@ struct ZipFile:
                 "Only ZIP_STORED and ZIP_DEFLATED compression methods are"
                 " supported"
             )
-        return ZipFileWriter(Pointer(to=self), name, mode, compression_method, compresslevel)
+        return ZipFileWriter(
+            Pointer(to=self), name, mode, compression_method, compresslevel
+        )
 
     fn writestr(
         mut self,
@@ -399,7 +398,9 @@ struct ZipFile:
         compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
     ) raises:
         # Some streaming would be nice here
-        file_handle = self.open_to_write(arcname, "w", compression_method, compresslevel)
+        file_handle = self.open_to_write(
+            arcname, "w", compression_method, compresslevel
+        )
         file_handle.write(data.as_bytes())
         file_handle.close()
 
