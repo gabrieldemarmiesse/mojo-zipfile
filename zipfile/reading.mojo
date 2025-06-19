@@ -15,7 +15,7 @@ from .metadata import (
 )
 import os
 from .crc_32 import CRC32
-from .zlib import uncompress, compress, StreamingDecompressor
+from .zlib.compression import uncompress, compress, StreamingDecompressor
 from utils import Variant
 
 
