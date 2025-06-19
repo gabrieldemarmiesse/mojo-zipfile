@@ -18,12 +18,11 @@ jobs:
       uses: prefix-dev/setup-pixi@v0.8.1
       with:
         pixi-version: v0.42.0
-    
-    - name: Run tests
-      run: pixi run tests
-    
+
     - name: Install pre-commit hooks
       run: pixi run pre-commit install
     
     - name: Run pre-commit checks
       run: pixi run pre-commit run --all-files
+    - name: Run tests
+      run: pixi run tests
