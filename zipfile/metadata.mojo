@@ -168,7 +168,11 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
     var extra_field: List[UInt8]
     var file_comment: List[UInt8]
 
-    fn __init__(out self, local_file_header: LocalFileHeader):
+    fn __init__(
+        out self,
+        local_file_header: LocalFileHeader,
+        relative_offset_of_local_header: UInt32,
+    ):
         self.version_made_by = DEFAULT_VERSION
         self.version_needed_to_extract = (
             local_file_header.version_needed_to_extract
@@ -185,7 +189,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         self.disk_number_start = 0
         self.internal_file_attributes = 0
         self.external_file_attributes = 0
-        self.relative_offset_of_local_header = 0
+        self.relative_offset_of_local_header = relative_offset_of_local_header
         self.filename = local_file_header.filename
         self.extra_field = local_file_header.extra_field
         self.file_comment = List[UInt8]()

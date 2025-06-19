@@ -240,14 +240,10 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         )
         _ = self.zipfile[].file.seek(old_position)
         # Create central directory entry with correct header offset
-        var central_dir_header = CentralDirectoryFileHeader(
-            self.local_file_header
-        )
-        central_dir_header.relative_offset_of_local_header = UInt32(
-            self._header_offset
-        )
         self.zipfile[].central_directory_files_headers.append(
-            central_dir_header
+            CentralDirectoryFileHeader(
+                self.local_file_header, UInt32(self._header_offset)
+            )
         )
         self.open = False
 
