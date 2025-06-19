@@ -47,6 +47,10 @@ alias deflateInit2_type = fn (
 alias deflate_type = fn (strm: z_stream_ptr, flush: ffi.c_int) -> ffi.c_int
 alias deflateEnd_type = fn (strm: z_stream_ptr) -> ffi.c_int
 
+alias adler32_type = fn (
+    adler: uLong, buf: UnsafePointer[Bytef], len: UInt32
+) -> uLong
+
 alias Z_OK: ffi.c_int = 0
 alias Z_STREAM_END: ffi.c_int = 1
 alias Z_NO_FLUSH: ffi.c_int = 0
