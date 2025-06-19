@@ -51,6 +51,10 @@ alias adler32_type = fn (
     adler: uLong, buf: UnsafePointer[Bytef], len: UInt32
 ) -> uLong
 
+alias crc32_type = fn (
+    crc: uLong, buf: UnsafePointer[Bytef], len: UInt32
+) -> uLong
+
 alias Z_OK: ffi.c_int = 0
 alias Z_STREAM_END: ffi.c_int = 1
 alias Z_NO_FLUSH: ffi.c_int = 0
