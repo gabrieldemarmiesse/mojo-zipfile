@@ -8,9 +8,8 @@ alias uLong = UInt64
 
 alias z_stream_ptr = UnsafePointer[ZStream]  # forward-declared below
 
-
-@value
-struct ZStream:
+@fieldwise_init
+struct ZStream(Copyable, Movable):
     var next_in: UnsafePointer[Bytef]
     var avail_in: UInt32
     var total_in: uLong

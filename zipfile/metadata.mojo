@@ -12,8 +12,7 @@ alias BZIP2_VERSION = 46
 alias LZMA_VERSION = 63
 
 
-@value
-struct GeneralPurposeBitFlag:
+struct GeneralPurposeBitFlag(Copyable, Movable):
     var bits: UInt16
 
     fn __init__(out self, bits: UInt16):
@@ -71,8 +70,7 @@ struct GeneralPurposeBitFlag:
         return (self.bits & UInt16(1 << 13)) != 0
 
 
-@value
-struct LocalFileHeader:
+struct LocalFileHeader(Copyable, Movable):
     alias SIGNATURE = List[UInt8](0x50, 0x4B, 3, 4)
     alias CRC32_OFFSET = 14
 
@@ -150,8 +148,7 @@ struct LocalFileHeader:
         return 30 + len(self.filename) + len(self.extra_field)
 
 
-@value
-struct CentralDirectoryFileHeader:
+struct CentralDirectoryFileHeader(Copyable, Movable):
     alias SIGNATURE = List[UInt8](0x50, 0x4B, 1, 2)
 
     var version_made_by: UInt16
@@ -291,8 +288,7 @@ struct CentralDirectoryFileHeader:
         )
 
 
-@value
-struct EndOfCentralDirectoryRecord:
+struct EndOfCentralDirectoryRecord(Copyable, Movable):
     alias SIGNATURE = List[UInt8](0x50, 0x4B, 5, 6)
 
     var number_of_this_disk: UInt16

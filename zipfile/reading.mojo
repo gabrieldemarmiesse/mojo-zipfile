@@ -30,8 +30,7 @@ def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
             return False
 
 
-@value
-struct ZipInfo:
+struct ZipInfo(Copyable, Movable):
     var filename: String
     var _start_of_header: UInt64
     var _compressed_size: UInt64
