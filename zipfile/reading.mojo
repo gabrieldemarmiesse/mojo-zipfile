@@ -281,11 +281,11 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             and len(self._uncompressed_buffer) > 0
         ):
             # Compress the accumulated data
-            compressed_data = compress(
+            var compressed_data = compress(
                 self._uncompressed_buffer, self._compresslevel, quiet=True
             )
-            self.zipfile[].file.write_bytes(compressed_data)
             self.compressed_size = UInt64(len(compressed_data))
+            self.zipfile[].file.write_bytes(compressed_data)
 
         # We need to write the crc32 and the compressed size
         self.local_file_header.crc32 = self.crc32.get_final_crc()

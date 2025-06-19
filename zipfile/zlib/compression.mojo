@@ -3,70 +3,26 @@ from memory import memset_zero, UnsafePointer
 from sys import info, exit
 import sys
 import os
-
-alias Bytef = Scalar[DType.uint8]
-alias uLong = UInt64
-
-alias z_stream_ptr = UnsafePointer[ZStream]  # forward-declared below
-
-
-# Cleaner than declaring an __init__()
-@fieldwise_init
-struct ZStream(Copyable, Movable):
-    var next_in: UnsafePointer[Bytef]
-    var avail_in: UInt32
-    var total_in: uLong
-    var next_out: UnsafePointer[Bytef]
-    var avail_out: UInt32
-    var total_out: uLong
-    var msg: UnsafePointer[UInt8]
-    var state: UnsafePointer[UInt8]
-    var zalloc: UnsafePointer[UInt8]
-    var zfree: UnsafePointer[UInt8]
-    var opaque: UnsafePointer[UInt8]
-    var data_type: Int32
-    var adler: uLong
-    var reserved: uLong
-
-
-alias inflateInit2_type = fn (
-    strm: z_stream_ptr,
-    windowBits: Int32,
-    version: UnsafePointer[UInt8],
-    stream_size: Int32,
-) -> ffi.c_int
-alias inflate_type = fn (strm: z_stream_ptr, flush: ffi.c_int) -> ffi.c_int
-alias inflateEnd_type = fn (strm: z_stream_ptr) -> ffi.c_int
-
-alias deflateInit2_type = fn (
-    strm: z_stream_ptr,
-    level: Int32,
-    method: Int32,
-    windowBits: Int32,
-    memLevel: Int32,
-    strategy: Int32,
-    version: UnsafePointer[UInt8],
-    stream_size: Int32,
-) -> ffi.c_int
-alias deflate_type = fn (strm: z_stream_ptr, flush: ffi.c_int) -> ffi.c_int
-alias deflateEnd_type = fn (strm: z_stream_ptr) -> ffi.c_int
-
-alias Z_OK: ffi.c_int = 0
-alias Z_STREAM_END: ffi.c_int = 1
-alias Z_NO_FLUSH: ffi.c_int = 0
-alias Z_SYNC_FLUSH: ffi.c_int = 2
-alias Z_FINISH: ffi.c_int = 4
-
-# Compression levels
-alias Z_DEFAULT_COMPRESSION: Int32 = -1
-alias Z_BEST_COMPRESSION: Int32 = 9
-alias Z_BEST_SPEED: Int32 = 1
-
-# Compression methods
-alias Z_DEFLATED: Int32 = 8
-
-# Compression strategies
-alias Z_DEFAULT_STRATEGY: Int32 = 0
+from .constants import (
+    ZStream,
+    Bytef,
+    z_stream_ptr,
+    inflateInit2_type,
+    inflate_type,
+    inflateEnd_type,
+    deflateInit2_type,
+    deflate_type,
+    deflateEnd_type,
+    Z_OK,
+    Z_STREAM_END,
+    Z_NO_FLUSH,
+    Z_FINISH,
+    Z_DEFAULT_COMPRESSION,
+    Z_BEST_COMPRESSION,
+    Z_BEST_SPEED,
+    Z_DEFLATED,
+    Z_DEFAULT_STRATEGY,
+)
 
 
 fn _get_libz_path() raises -> String:
