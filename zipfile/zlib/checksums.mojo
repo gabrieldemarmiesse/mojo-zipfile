@@ -66,7 +66,37 @@ struct CRC32:
         return ~self._internal_value
 
 
-fn crc32(data: Span[UInt8]) -> UInt32:
-    crc32_struct = CRC32()
+fn crc32(data: Span[UInt8], value: UInt32 = 0) -> UInt32:
+    """Computes a CRC-32 checksum of data.
+
+    Args:
+        data: The data to compute the checksum for (as a Span)
+        value: Starting value of the checksum (default: 0)
+
+    Returns:
+        An unsigned 32-bit integer representing the CRC-32 checksum
+    """
+    var crc32_struct = CRC32()
+    # Set initial value if provided (inverted because CRC32 starts with 0xFFFFFFFF)
+    if value != 0:
+        crc32_struct._internal_value = ~value
     crc32_struct.write(data)
+    return crc32_struct.get_final_crc()
+
+
+fn crc32(data: List[UInt8], value: UInt32 = 0) -> UInt32:
+    """Computes a CRC-32 checksum of data.
+
+    Args:
+        data: The data to compute the checksum for
+        value: Starting value of the checksum (default: 0)
+
+    Returns:
+        An unsigned 32-bit integer representing the CRC-32 checksum
+    """
+    var crc32_struct = CRC32()
+    # Set initial value if provided (inverted because CRC32 starts with 0xFFFFFFFF)
+    if value != 0:
+        crc32_struct._internal_value = ~value
+    crc32_struct.write(Span(data))
     return crc32_struct.get_final_crc()

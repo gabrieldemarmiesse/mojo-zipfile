@@ -72,3 +72,4 @@ Since the Mojo language is pretty new, the Mojo repository can be found in `modu
 Do not use print statements in the tests. They won't be seen if the tests are passing correctly.
 
 The reference implementation in python can be found in `zipfile/reference.py`.
+List is auto-cast to Span when calling a function. So it's not necessary to implement a function for both Span and List. Just implementing it for Span is enough.
