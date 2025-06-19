@@ -150,8 +150,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
 
             if len(decompressed_data) > 0:
                 # Add to result
-                for byte in decompressed_data:
-                    result.append(byte)
+                result += decompressed_data
 
                 # Update CRC32 with decompressed data
                 self.crc32.write(decompressed_data)

@@ -478,8 +478,7 @@ def test_streaming_large_file_small_chunks():
         if len(chunk) == 0:
             break
 
-        for byte in chunk:
-            reconstructed_data.append(byte)
+        reconstructed_data += chunk
 
         bytes_read += len(chunk)
 
@@ -528,21 +527,16 @@ def test_streaming_large_file_large_chunks():
     # Read in 100KB chunks - larger than the 64KB output buffer
     chunk_size = 100 * 1024  # 100KB
     reconstructed_data = List[UInt8]()
-    total_read = 0
 
     while True:
         chunk = file_reader.read(chunk_size)
         if len(chunk) == 0:
             break
-
-        for byte in chunk:
-            reconstructed_data.append(byte)
-
-        total_read += len(chunk)
+        reconstructed_data += chunk
 
         # Ensure we're not reading infinitely
         assert_true(
-            total_read <= len(large_data) + chunk_size,
+            len(reconstructed_data) <= len(large_data) + chunk_size,
             "Read exceeded expected size",
         )
 
@@ -641,30 +635,21 @@ def test_mixed_read_patterns_large_file():
     reconstructed_data = List[UInt8]()
 
     # Read small chunk first
-    chunk1 = file_reader.read(500)
-    for byte in chunk1:
-        reconstructed_data.append(byte)
+    reconstructed_data += file_reader.read(500)
 
     # Read medium chunk
-    chunk2 = file_reader.read(5000)
-    for byte in chunk2:
-        reconstructed_data.append(byte)
+    reconstructed_data += file_reader.read(5000)
 
     # Read large chunk
-    chunk3 = file_reader.read(50000)
-    for byte in chunk3:
-        reconstructed_data.append(byte)
+    reconstructed_data += file_reader.read(50000)
 
     # Read very small chunks
     for _ in range(10):
-        small_chunk = file_reader.read(100)
-        for byte in small_chunk:
-            reconstructed_data.append(byte)
+        reconstructed_data += file_reader.read(100)
 
     # Read rest of file
     rest = file_reader.read(-1)
-    for byte in rest:
-        reconstructed_data.append(byte)
+    reconstructed_data += rest
 
     # Verify complete data integrity - check size first
     assert_equal(len(reconstructed_data), len(large_data))
@@ -713,8 +698,7 @@ def test_streaming_multiple_large_files():
         chunk = reader1.read(512)
         if len(chunk) == 0:
             break
-        for byte in chunk:
-            reconstructed1.append(byte)
+        reconstructed1 += chunk
 
     # Verify file1 immediately - check size first
     assert_equal(len(reconstructed1), len(data1))
@@ -741,8 +725,7 @@ def test_streaming_multiple_large_files():
         chunk = reader3.read(1024)
         if len(chunk) == 0:
             break
-        for byte in chunk:
-            reconstructed3.append(byte)
+        reconstructed3 += chunk
 
     # Verify file3 - check size first
     assert_equal(len(reconstructed3), len(data3))

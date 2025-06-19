@@ -268,8 +268,7 @@ struct StreamingDecompressor(Copyable, Movable):
 
     fn feed_input(mut self, data: List[UInt8]):
         """Feed compressed input data to the decompressor."""
-        for byte in data:
-            self.input_buffer.append(byte)
+        self.input_buffer += data
 
     fn _decompress_available(mut self) raises -> Bool:
         """Try to decompress some data from input buffer. Returns True if output was produced.
