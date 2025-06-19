@@ -134,30 +134,55 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         # Use 32KB chunks to balance I/O and memory usage
         alias CHUNK_SIZE = 32768
 
+        var result = List[UInt8]()
+        var bytes_needed = size if size > 0 else -1  # -1 means read all
+
         while True:
+            # Determine how much to request from decompressor
+            var chunk_request = 65536  # Default chunk size
+            if bytes_needed > 0:
+                chunk_request = min(bytes_needed, 65536)
+
             # First, try to get data from the decompressor
             var decompressed_data = self._streaming_decompressor.read(
-                size if size > 0 else 65536
+                chunk_request
             )
+
             if len(decompressed_data) > 0:
+                # Add to result
+                for byte in decompressed_data:
+                    result.append(byte)
+
                 # Update CRC32 with decompressed data
                 self.crc32.write(decompressed_data)
 
-                # Check if we've read all data and verify CRC
-                if (
-                    self._streaming_decompressor.is_finished()
-                    and self._bytes_read_from_file == self.compressed_size
-                ):
-                    self._check_crc32()
+                # Update bytes needed counter
+                if bytes_needed > 0:
+                    bytes_needed -= len(decompressed_data)
+                    if bytes_needed <= 0:
+                        # We have enough data
+                        return result
 
-                return decompressed_data
+                # If reading all data (size <= 0), continue until finished
+                if size <= 0:
+                    # Check if we've read all data and verify CRC
+                    if (
+                        self._streaming_decompressor.is_finished()
+                        and self._bytes_read_from_file == self.compressed_size
+                    ):
+                        self._check_crc32()
+                        return result
+                    # Otherwise continue reading
+                else:
+                    # For specific size requests, return what we have so far
+                    return result
 
             # If decompressor can't provide data, check if we need more input
             if self._streaming_decompressor.is_finished():
-                # All done, return empty list
+                # All done, return what we have
                 if self._bytes_read_from_file == self.compressed_size:
                     self._check_crc32()
-                return List[UInt8]()
+                return result
 
             # Read more compressed data from file if available
             if self._bytes_read_from_file < self.compressed_size:

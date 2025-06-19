@@ -489,10 +489,14 @@ def test_streaming_large_file_small_chunks():
             "Read more data than expected",
         )
 
-    # Verify complete data integrity
-    reconstructed_string = String(bytes=reconstructed_data)
-    assert_equal(reconstructed_string, large_data)
+    # Verify complete data integrity - check size first
     assert_equal(len(reconstructed_data), len(large_data))
+
+    # Then verify content byte-by-byte to avoid huge error messages
+    large_data_bytes = large_data.as_bytes()
+    for i in range(len(reconstructed_data)):
+        if reconstructed_data[i] != large_data_bytes[i]:
+            assert_true(False, "Data mismatch at byte " + String(i))
 
     zip_read.close()
 
@@ -542,10 +546,14 @@ def test_streaming_large_file_large_chunks():
             "Read exceeded expected size",
         )
 
-    # Verify complete data integrity
-    reconstructed_string = String(bytes=reconstructed_data)
-    assert_equal(reconstructed_string, large_data)
+    # Verify complete data integrity - check size first
     assert_equal(len(reconstructed_data), len(large_data))
+
+    # Then verify content byte-by-byte to avoid huge error messages
+    large_data_bytes = large_data.as_bytes()
+    for i in range(len(reconstructed_data)):
+        if reconstructed_data[i] != large_data_bytes[i]:
+            assert_true(False, "Data mismatch at byte " + String(i))
 
     zip_read.close()
 
@@ -592,10 +600,14 @@ def test_streaming_entire_large_file():
     # Read entire file in one call
     all_data = file_reader.read(-1)
 
-    # Verify complete data integrity
-    reconstructed_string = String(bytes=all_data)
-    assert_equal(reconstructed_string, large_data)
+    # Verify complete data integrity - check size first
     assert_equal(len(all_data), len(large_data))
+
+    # Then verify content byte-by-byte to avoid huge error messages
+    large_data_bytes = large_data.as_bytes()
+    for i in range(len(all_data)):
+        if all_data[i] != large_data_bytes[i]:
+            assert_true(False, "Data mismatch at byte " + String(i))
 
     # Try reading again - should return empty
     more_data = file_reader.read()
@@ -654,10 +666,14 @@ def test_mixed_read_patterns_large_file():
     for byte in rest:
         reconstructed_data.append(byte)
 
-    # Verify complete data integrity
-    reconstructed_string = String(bytes=reconstructed_data)
-    assert_equal(reconstructed_string, large_data)
+    # Verify complete data integrity - check size first
     assert_equal(len(reconstructed_data), len(large_data))
+
+    # Then verify content byte-by-byte to avoid huge error messages
+    large_data_bytes = large_data.as_bytes()
+    for i in range(len(reconstructed_data)):
+        if reconstructed_data[i] != large_data_bytes[i]:
+            assert_true(False, "Data mismatch at byte " + String(i))
 
     zip_read.close()
 
@@ -700,15 +716,23 @@ def test_streaming_multiple_large_files():
         for byte in chunk:
             reconstructed1.append(byte)
 
-    # Verify file1 immediately
-    result1 = String(bytes=reconstructed1)
-    assert_equal(result1, data1)
+    # Verify file1 immediately - check size first
+    assert_equal(len(reconstructed1), len(data1))
+    data1_bytes = data1.as_bytes()
+    for i in range(len(reconstructed1)):
+        if reconstructed1[i] != data1_bytes[i]:
+            assert_true(False, "File1 data mismatch at byte " + String(i))
 
     # Read file2 all at once
     reader2 = zip_read.open("file2.txt", "r")
     reconstructed2 = reader2.read(-1)
-    result2 = String(bytes=reconstructed2)
-    assert_equal(result2, data2)
+
+    # Verify file2 - check size first
+    assert_equal(len(reconstructed2), len(data2))
+    data2_bytes = data2.as_bytes()
+    for i in range(len(reconstructed2)):
+        if reconstructed2[i] != data2_bytes[i]:
+            assert_true(False, "File2 data mismatch at byte " + String(i))
 
     # Read file3 in medium chunks
     reader3 = zip_read.open("file3.txt", "r")
@@ -720,9 +744,12 @@ def test_streaming_multiple_large_files():
         for byte in chunk:
             reconstructed3.append(byte)
 
-    # Verify file3
-    result3 = String(bytes=reconstructed3)
-    assert_equal(result3, data3)
+    # Verify file3 - check size first
+    assert_equal(len(reconstructed3), len(data3))
+    data3_bytes = data3.as_bytes()
+    for i in range(len(reconstructed3)):
+        if reconstructed3[i] != data3_bytes[i]:
+            assert_true(False, "File3 data mismatch at byte " + String(i))
 
     zip_read.close()
 
