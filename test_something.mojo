@@ -230,9 +230,6 @@ def test_deflate_compression_ratio():
     deflated_size = len(Path(deflated_file).read_bytes())
 
     # Deflated should be significantly smaller for repetitive data
-    print("Stored size:", stored_size)
-    print("Deflated size:", deflated_size)
-    print("Compression ratio:", Float64(stored_size) / Float64(deflated_size))
     assert_true(
         deflated_size < stored_size,
         "Deflated file should be smaller than stored file",
@@ -274,7 +271,6 @@ def test_compression_levels():
         from pathlib import Path
         file_size = len(Path(file_path).read_bytes())
         file_sizes.append(file_size)
-        print("Compression level", level, "file size:", file_size)
     
     # Level 9 (best compression) should produce smallest or equal size compared to level 1
     # Note: For small data, differences might be minimal
@@ -365,7 +361,6 @@ def test_compression_level_constants():
         assert_equal(String(bytes=content), test_data)
         zip_read.close()
     
-    print("All compression level constants work correctly!")
 
 
 def main():
@@ -382,4 +377,3 @@ def main():
     test_compression_levels()
     test_compression_level_progressive_write()
     test_compression_level_constants()
-    print("All tests passed!")
