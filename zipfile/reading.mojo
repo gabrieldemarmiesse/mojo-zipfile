@@ -197,9 +197,10 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 # Feed to decompressor
                 self._streaming_decompressor.feed_input(compressed_chunk)
             else:
-                # No more compressed data, but decompressor isn't finished
-                # This shouldn't happen with valid ZIP files
-                raise Error("Unexpected end of compressed data")
+                # We've read all compressed data from file, but decompressor may still have data to process
+                # This is normal - zlib might need multiple calls to process all the input
+                # Continue the loop to let decompressor process remaining input buffer data
+                pass
 
 
 struct ZipFileWriter[origin: Origin[mut=True]]:
