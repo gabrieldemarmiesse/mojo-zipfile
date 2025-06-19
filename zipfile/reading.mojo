@@ -415,11 +415,8 @@ struct ZipFile:
 
     fn read(mut self, name: String) raises -> List[UInt8]:
         """Read and return the bytes of a file in the archive."""
-        # Create a fresh file reader for each read() call to avoid state issues
         file_reader = self.open(name, "r")
-        content = file_reader.read()
-        # Note: file_reader will be automatically cleaned up when it goes out of scope
-        return content
+        return file_reader.read()
 
     fn getinfo(mut self, name: String) raises -> ZipInfo:
         # We need to seek to the start of the header
