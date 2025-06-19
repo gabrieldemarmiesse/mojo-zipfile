@@ -195,11 +195,9 @@ struct ZipFileReader[origin: Origin[mut=True]]:
 
                 # Feed to decompressor
                 self._streaming_decompressor.feed_input(compressed_chunk)
-            else:
-                # We've read all compressed data from file, but decompressor may still have data to process
-                # This is normal - zlib might need multiple calls to process all the input
-                # Continue the loop to let decompressor process remaining input buffer data
-                pass
+            # We've read all compressed data from file, but decompressor may still have data to process
+            # This is normal - zlib might need multiple calls to process all the input
+            # Continue the loop to let decompressor process remaining input buffer data
 
 
 struct ZipFileWriter[origin: Origin[mut=True]]:
