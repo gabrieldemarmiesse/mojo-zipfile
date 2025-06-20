@@ -70,7 +70,7 @@ fn test_decompress_repeated_pattern() raises:
     """Test decompressing repeated pattern (100 'A's)."""
     var test_string = "A" * 100
     var compressed = compress_string_with_python(test_string, wbits=15)
-    var expected = generate_repeated_bytes(65, 100)  # 'A' = ASCII 65
+    var expected = [UInt8(65) for _ in range(100)]  # 'A' = ASCII 65
 
     var result = decompress(compressed)
     testing.assert_equal(len(result), 100)
