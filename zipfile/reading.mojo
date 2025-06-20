@@ -15,7 +15,11 @@ from .metadata import (
 )
 import os
 from .zlib import CRC32
-from .zlib.compression import uncompress, compress, StreamingDecompressor
+from .zlib.compression import (
+    uncompress,
+    compress,
+    StreamingDecompressor,
+)
 from utils import Variant
 
 
@@ -280,9 +284,11 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             self.local_file_header.compression_method == ZIP_DEFLATED
             and len(self._uncompressed_buffer) > 0
         ):
-            # Compress the accumulated data
+            # Compress the accumulated data using raw deflate format for ZIP files
             compressed_data = compress(
-                self._uncompressed_buffer, self._compresslevel, quiet=True
+                self._uncompressed_buffer,
+                level=Int(self._compresslevel),
+                wbits=-15,
             )
             self.zipfile[].file.write_bytes(compressed_data)
             self.compressed_size = UInt64(len(compressed_data))

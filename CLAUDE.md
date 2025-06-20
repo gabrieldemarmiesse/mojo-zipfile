@@ -73,3 +73,7 @@ Do not use print statements in the tests. They won't be seen if the tests are pa
 
 The reference implementation in python can be found in `zipfile/reference.py`.
 List is auto-cast to Span when calling a function. So it's not necessary to implement a function for both Span and List. Just implementing it for Span is enough.
+
+In docstrings, sentences to describle a function or an argument should always end with a "."
+
+In Mojo `Byte` is an alias for `UInt8`.

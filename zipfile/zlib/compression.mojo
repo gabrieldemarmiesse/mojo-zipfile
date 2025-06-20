@@ -22,6 +22,7 @@ from .constants import (
     Z_BEST_SPEED,
     Z_DEFLATED,
     Z_DEFAULT_STRATEGY,
+    MAX_WBITS,
 )
 
 
@@ -314,10 +315,21 @@ struct StreamingDecompressor(Copyable, Movable):
 
 
 fn compress(
-    data: List[UInt8],
-    compresslevel: Int32 = Z_DEFAULT_COMPRESSION,
-    quiet: Bool = False,
-) raises -> List[UInt8]:
+    data: Span[Byte], /, level: Int = -1, wbits: Int = MAX_WBITS
+) raises -> List[Byte]:
+    """Compress data using zlib compression.
+
+    Args:
+        data: The data to compress.
+        level: Compression level (0-9, -1 for default).
+        wbits: Window bits parameter controlling format and window size
+               - Positive values (9-15): zlib format with header and trailer
+               - Negative values (-9 to -15): raw deflate format
+               - Values 25-31: gzip format.
+
+    Returns:
+        Compressed data as List[Byte].
+    """
     var handle = ffi.DLHandle(_get_libz_path())
 
     var deflateInit2 = handle.get_function[deflateInit2_type]("deflateInit2_")
@@ -349,15 +361,19 @@ fn compress(
     stream.next_out = out_buf.unsafe_ptr()
     stream.avail_out = UInt32(len(out_buf))
 
-    # Use raw deflate by passing -15 as windowBits
+    # Set compression level, defaulting to Z_DEFAULT_COMPRESSION if -1
+    var compression_level = Int32(level)
+    if level == -1:
+        compression_level = Z_DEFAULT_COMPRESSION
+
     var zlib_version = String("1.2.11")
     var init_res = deflateInit2(
         UnsafePointer(to=stream),
-        compresslevel,  # compression level
-        Z_DEFLATED,  # method
-        -15,  # raw deflate (negative windowBits)
+        compression_level,
+        Z_DEFLATED,
+        Int32(wbits),  # Use wbits parameter for window size/format
         8,  # memLevel
-        Z_DEFAULT_STRATEGY,  # strategy
+        Z_DEFAULT_STRATEGY,
         zlib_version.unsafe_cstr_ptr().bitcast[UInt8](),
         Int32(sys.sizeof[ZStream]()),
     )
@@ -369,10 +385,9 @@ fn compress(
     var Z_RES = deflate_fn(UnsafePointer(to=stream), Z_FINISH)
     _ = deflateEnd(UnsafePointer(to=stream))
 
-    if not quiet:
-        _log_zlib_result(Z_RES, compressing=True)
+    _log_zlib_result(Z_RES, compressing=True)
 
     if Z_RES != Z_STREAM_END:
         raise Error("Compression failed with code " + String(Z_RES))
-
-    return out_buf[: Int(stream.total_out)]
+    out_buf.resize(Int(stream.total_out), 0)
+    return out_buf^
