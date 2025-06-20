@@ -13,3 +13,29 @@ def to_py_bytes(data: Span[Byte]) -> PythonObject:
     for byte in data:
         result_as_list.append(byte)
     return py_builtins.bytes(result_as_list)
+
+
+fn to_mojo_bytes(some_data: PythonObject) raises -> List[Byte]:
+    result = List[Byte]()
+    for byte in some_data:
+        result.append(Byte(byte))
+
+
+fn to_mojo_string(some_data: PythonObject) raises -> String:
+    mojo_bytes = to_mojo_bytes(some_data)
+    return String.from_bytes(mojo_bytes)
+
+
+fn assert_lists_are_equal(
+    list1: List[Byte],
+    list2: List[Byte],
+    message: String = "Lists should be equal",
+) raises -> None:
+    if len(list1) != len(list2):
+        raise Error(message + ": Lengths differ")
+    for i in range(len(list1)):
+        if list1[i] != list2[i]:
+            raise Error(
+                message
+                + f": Elements at index {i} differ ({list1[i]} != {list2[i]})"
+            )
