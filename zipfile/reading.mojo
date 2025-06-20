@@ -20,6 +20,7 @@ from .zlib.compression import (
     compress,
     StreamingDecompressor,
 )
+from .zlib.constants import MAX_WBITS
 from utils import Variant
 
 
@@ -83,7 +84,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         self.expected_crc32 = expected_crc32
         self.crc32 = CRC32()
         self._inner_buffer = List[UInt8]()
-        self._streaming_decompressor = StreamingDecompressor()
+        self._streaming_decompressor = StreamingDecompressor(-MAX_WBITS)
         self._decompressor_initialized = False
         self._bytes_read_from_file = 0
 

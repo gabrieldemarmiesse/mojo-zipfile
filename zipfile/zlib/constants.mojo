@@ -74,3 +74,6 @@ alias Z_DEFAULT_STRATEGY: Int32 = 0
 
 # Window bits
 alias MAX_WBITS: Int = 15
+
+# Buffer size
+alias DEF_BUF_SIZE: Int = 16384
