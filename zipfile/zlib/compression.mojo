@@ -22,6 +22,7 @@ from .constants import (
     Z_BEST_SPEED,
     Z_DEFLATED,
     Z_DEFAULT_STRATEGY,
+    MAX_WBITS,
 )
 
 
@@ -313,7 +314,7 @@ struct StreamingDecompressor(Copyable, Movable):
             _ = self.inflateEnd(UnsafePointer(to=self.stream))
 
 
-fn compress(
+fn compress_internal(
     data: List[UInt8],
     compresslevel: Int32 = Z_DEFAULT_COMPRESSION,
     quiet: Bool = False,
@@ -376,3 +377,98 @@ fn compress(
         raise Error("Compression failed with code " + String(Z_RES))
 
     return out_buf[: Int(stream.total_out)]
+
+
+fn compress(
+    data: Span[Byte], /, level: Int = -1, wbits: Int = MAX_WBITS
+) raises -> List[Byte]:
+    """Compress data using zlib compression.
+
+    Args:
+        data: The data to compress.
+        level: Compression level (0-9, -1 for default).
+        wbits: Window bits parameter controlling format and window size
+               - Positive values (9-15): zlib format with header and trailer
+               - Negative values (-9 to -15): raw deflate format
+               - Values 25-31: gzip format.
+
+    Returns:
+        Compressed data as List[Byte].
+    """
+    try:
+        var handle = ffi.DLHandle(_get_libz_path())
+
+        var deflateInit2 = handle.get_function[deflateInit2_type](
+            "deflateInit2_"
+        )
+        var deflate_fn = handle.get_function[deflate_type]("deflate")
+        var deflateEnd = handle.get_function[deflateEnd_type]("deflateEnd")
+
+        # Convert Span[Byte] to List[UInt8] for internal processing
+        var data_list = List[UInt8]()
+        for i in range(len(data)):
+            data_list.append(data[i])
+
+        var stream = ZStream(
+            next_in=data_list.unsafe_ptr(),
+            avail_in=UInt32(len(data_list)),
+            total_in=0,
+            next_out=UnsafePointer[Bytef](),
+            avail_out=0,
+            total_out=0,
+            msg=UnsafePointer[UInt8](),
+            state=UnsafePointer[UInt8](),
+            zalloc=UnsafePointer[UInt8](),
+            zfree=UnsafePointer[UInt8](),
+            opaque=UnsafePointer[UInt8](),
+            data_type=0,
+            adler=0,
+            reserved=0,
+        )
+
+        # Estimate compressed size (upper bound)
+        var estimated_size = len(data_list) + (len(data_list) // 1000) + 12
+        var out_buf = List[UInt8](capacity=estimated_size)
+        out_buf.resize(estimated_size, 0)
+
+        stream.next_out = out_buf.unsafe_ptr()
+        stream.avail_out = UInt32(len(out_buf))
+
+        # Set compression level, defaulting to Z_DEFAULT_COMPRESSION if -1
+        var compression_level = Int32(level)
+        if level == -1:
+            compression_level = Z_DEFAULT_COMPRESSION
+
+        var zlib_version = String("1.2.11")
+        var init_res = deflateInit2(
+            UnsafePointer(to=stream),
+            compression_level,
+            Z_DEFLATED,
+            Int32(wbits),  # Use wbits parameter for window size/format
+            8,  # memLevel
+            Z_DEFAULT_STRATEGY,
+            zlib_version.unsafe_cstr_ptr().bitcast[UInt8](),
+            Int32(sys.sizeof[ZStream]()),
+        )
+
+        if init_res != Z_OK:
+            _log_zlib_result(init_res, compressing=True)
+            raise Error("Failed to initialize deflate stream")
+
+        var Z_RES = deflate_fn(UnsafePointer(to=stream), Z_FINISH)
+        _ = deflateEnd(UnsafePointer(to=stream))
+
+        _log_zlib_result(Z_RES, compressing=True)
+
+        if Z_RES != Z_STREAM_END:
+            raise Error("Compression failed with code " + String(Z_RES))
+
+        # Convert List[UInt8] to List[Byte] for return
+        var result = List[Byte]()
+        var compressed_data = out_buf[: Int(stream.total_out)]
+        for i in range(len(compressed_data)):
+            result.append(compressed_data[i])
+
+        return result
+    except e:
+        raise Error("Compression failed: " + String(e))

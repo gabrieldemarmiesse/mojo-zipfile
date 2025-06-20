@@ -71,3 +71,6 @@ alias Z_DEFLATED: Int32 = 8
 
 # Compression strategies
 alias Z_DEFAULT_STRATEGY: Int32 = 0
+
+# Window bits
+alias MAX_WBITS: Int = 15

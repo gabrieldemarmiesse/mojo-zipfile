@@ -15,7 +15,11 @@ from .metadata import (
 )
 import os
 from .zlib import CRC32
-from .zlib.compression import uncompress, compress, StreamingDecompressor
+from .zlib.compression import (
+    uncompress,
+    compress_internal,
+    StreamingDecompressor,
+)
 from utils import Variant
 
 
@@ -281,7 +285,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             and len(self._uncompressed_buffer) > 0
         ):
             # Compress the accumulated data
-            compressed_data = compress(
+            compressed_data = compress_internal(
                 self._uncompressed_buffer, self._compresslevel, quiet=True
             )
             self.zipfile[].file.write_bytes(compressed_data)
