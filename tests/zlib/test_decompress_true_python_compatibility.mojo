@@ -7,7 +7,12 @@ by calling Python's zlib.decompress in the same process.
 import zipfile.zlib as zlib
 from testing import assert_equal, assert_true
 from python import Python
-from zipfile.utils_testing import to_py_bytes
+from zipfile.utils_testing import (
+    to_py_bytes,
+    to_mojo_bytes,
+    assert_lists_are_equal,
+    test_mojo_vs_python_decompress,
+)
 from random import seed, random_ui64
 
 
@@ -22,31 +27,20 @@ def test_decompress_empty_data_python_compatibility():
     py_empty_bytes = to_py_bytes(empty_data)
     py_compressed = py_zlib.compress(py_empty_bytes)
 
-    # Convert Python compressed result to Mojo bytes
-    mojo_compressed = List[Byte]()
-    for i in range(len(py_compressed)):
-        mojo_compressed.append(UInt8(Int(py_compressed[i])))
-
-    # Decompress with both implementations
+    # Convert Python compressed result to Mojo bytes and decompress
+    mojo_compressed = to_mojo_bytes(py_compressed)
     mojo_result = zlib.decompress(mojo_compressed)
+
+    # Decompress with Python and convert to Mojo
     py_result = py_zlib.decompress(py_compressed)
+    py_result_mojo = to_mojo_bytes(py_result)
 
-    # Convert Python result to Mojo for comparison
-    py_result_list = List[Byte]()
-    for i in range(len(py_result)):
-        py_result_list.append(UInt8(Int(py_result[i])))
-
-    assert_equal(
-        len(mojo_result),
-        len(py_result_list),
-        "decompressed empty data length should match Python",
+    # Compare results using utility function
+    assert_lists_are_equal(
+        mojo_result,
+        py_result_mojo,
+        "decompressed empty data should match Python",
     )
-    for i in range(len(mojo_result)):
-        assert_equal(
-            mojo_result[i],
-            py_result_list[i],
-            "decompressed empty data bytes should match Python",
-        )
 
 
 def test_decompress_hello_python_compatibility():
@@ -59,31 +53,18 @@ def test_decompress_hello_python_compatibility():
     py_hello_bytes = to_py_bytes(hello_data)
     py_compressed = py_zlib.compress(py_hello_bytes)
 
-    # Convert Python compressed result to Mojo bytes
-    mojo_compressed = List[Byte]()
-    for i in range(len(py_compressed)):
-        mojo_compressed.append(UInt8(Int(py_compressed[i])))
-
-    # Decompress with both implementations
+    # Convert Python compressed result to Mojo bytes and decompress
+    mojo_compressed = to_mojo_bytes(py_compressed)
     mojo_result = zlib.decompress(mojo_compressed)
+
+    # Decompress with Python and convert to Mojo
     py_result = py_zlib.decompress(py_compressed)
+    py_result_mojo = to_mojo_bytes(py_result)
 
-    # Convert Python result to Mojo for comparison
-    py_result_list = List[Byte]()
-    for i in range(len(py_result)):
-        py_result_list.append(UInt8(Int(py_result[i])))
-
-    assert_equal(
-        len(mojo_result),
-        len(py_result_list),
-        "decompressed 'hello' length should match Python",
+    # Compare results using utility function
+    assert_lists_are_equal(
+        mojo_result, py_result_mojo, "decompressed 'hello' should match Python"
     )
-    for i in range(len(mojo_result)):
-        assert_equal(
-            mojo_result[i],
-            py_result_list[i],
-            "decompressed 'hello' bytes should match Python",
-        )
 
 
 def test_decompress_with_different_wbits_python_compatibility():

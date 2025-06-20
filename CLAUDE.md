@@ -128,3 +128,29 @@ def test_function_python_compatibility():
 ```
 
 Use `to_py_bytes()` utility function from `zipfile.utils_testing` to convert Mojo bytes to Python bytes objects.
+
+## Additional Utility Functions in `utils_testing.mojo`
+
+**Data Conversion:**
+- `to_py_bytes(data: Span[Byte]) -> PythonObject` - Convert Mojo bytes to Python bytes
+- `to_mojo_bytes(some_data: PythonObject) -> List[Byte]` - Convert Python bytes to Mojo bytes  
+- `to_mojo_string(some_data: PythonObject) -> String` - Convert Python bytes to Mojo String
+
+**Testing Utilities:**
+- `assert_lists_are_equal(list1: List[Byte], list2: List[Byte], message: String)` - Compare two byte lists with detailed error messages
+- `test_mojo_vs_python_decompress(test_data: Span[Byte], wbits: Int = 15, bufsize: Int = 16384, message: String)` - Helper to test Mojo vs Python decompress compatibility
+
+**Usage Example:**
+```mojo
+# Simple comparison
+var result1 = function1(data)
+var result2 = function2(data) 
+assert_lists_are_equal(result1, result2, "Functions should produce same result")
+
+# Python compatibility test
+test_mojo_vs_python_decompress(
+    test_data.as_bytes(),
+    wbits=31,
+    message="gzip format should match Python"
+)
+```

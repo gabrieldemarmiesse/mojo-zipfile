@@ -7,84 +7,37 @@ in the general compatibility tests.
 import zipfile.zlib as zlib
 from testing import assert_equal, assert_true
 from python import Python
-from zipfile.utils_testing import to_py_bytes
+from zipfile.utils_testing import (
+    to_py_bytes,
+    to_mojo_bytes,
+    assert_lists_are_equal,
+    test_mojo_vs_python_decompress,
+)
 
 
 def test_decompress_gzip_format_python_compatibility():
     """Test that our decompress works with gzip format (wbits=31) like Python.
     """
-    py_zlib = Python.import_module("zlib")
-
     test_data = (
         "Gzip format test data for compatibility verification.".as_bytes()
     )
 
-    # Compress with Python using gzip format (wbits=31)
-    py_data_bytes = to_py_bytes(test_data)
-    py_compressed = py_zlib.compress(py_data_bytes, wbits=31)
-
-    # Convert Python compressed result to Mojo bytes
-    mojo_compressed = List[Byte]()
-    for i in range(len(py_compressed)):
-        mojo_compressed.append(UInt8(Int(py_compressed[i])))
-
-    # Decompress with both implementations using gzip format
-    mojo_result = zlib.decompress(mojo_compressed, wbits=31)
-    py_result = py_zlib.decompress(py_compressed, wbits=31)
-
-    # Convert Python result to Mojo for comparison
-    py_result_list = List[Byte]()
-    for i in range(len(py_result)):
-        py_result_list.append(UInt8(Int(py_result[i])))
-
-    assert_equal(
-        len(mojo_result),
-        len(py_result_list),
-        "gzip decompressed data length should match Python",
+    test_mojo_vs_python_decompress(
+        test_data,
+        wbits=31,
+        message="gzip decompressed data should match Python",
     )
-    for i in range(len(mojo_result)):
-        assert_equal(
-            mojo_result[i],
-            py_result_list[i],
-            "gzip decompressed data bytes should match Python",
-        )
 
 
 def test_decompress_minimal_window_size_python_compatibility():
     """Test decompress with minimal window size (wbits=9)."""
-    py_zlib = Python.import_module("zlib")
-
     test_data = "Minimal window size test.".as_bytes()
 
-    # Compress with Python using minimal window size
-    py_data_bytes = to_py_bytes(test_data)
-    py_compressed = py_zlib.compress(py_data_bytes, wbits=9)
-
-    # Convert Python compressed result to Mojo bytes
-    mojo_compressed = List[Byte]()
-    for i in range(len(py_compressed)):
-        mojo_compressed.append(UInt8(Int(py_compressed[i])))
-
-    # Decompress with both implementations
-    mojo_result = zlib.decompress(mojo_compressed, wbits=9)
-    py_result = py_zlib.decompress(py_compressed, wbits=9)
-
-    # Convert Python result to Mojo for comparison
-    py_result_list = List[Byte]()
-    for i in range(len(py_result)):
-        py_result_list.append(UInt8(Int(py_result[i])))
-
-    assert_equal(
-        len(mojo_result),
-        len(py_result_list),
-        "minimal window size decompressed data length should match Python",
+    test_mojo_vs_python_decompress(
+        test_data,
+        wbits=9,
+        message="minimal window size decompressed data should match Python",
     )
-    for i in range(len(mojo_result)):
-        assert_equal(
-            mojo_result[i],
-            py_result_list[i],
-            "minimal window size decompressed data bytes should match Python",
-        )
 
 
 def test_decompress_very_small_buffer_python_compatibility():

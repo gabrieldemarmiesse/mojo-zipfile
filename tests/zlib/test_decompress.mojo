@@ -7,6 +7,7 @@ to ensure compatibility and correctness.
 import testing
 from zipfile.zlib.compression import decompress
 from zipfile.zlib.constants import MAX_WBITS, DEF_BUF_SIZE
+from zipfile.utils_testing import assert_lists_are_equal
 
 
 fn test_decompress_empty_data() raises:
@@ -50,8 +51,9 @@ fn test_decompress_hello_world_zlib() raises:
     var result = decompress(compressed)
     testing.assert_equal(len(result), 13)
 
-    for i in range(len(expected)):
-        testing.assert_equal(result[i], expected[i])
+    assert_lists_are_equal(
+        result, expected, "Hello World decompression should match expected"
+    )
 
 
 fn test_decompress_hello_world_gzip() raises:
@@ -809,40 +811,6 @@ fn test_decompress_constants_values() raises:
     testing.assert_equal(DEF_BUF_SIZE, 16384)
 
 
-fn test_decompress_return_type() raises:
-    """Test that decompress returns List[Byte] as specified."""
-    var compressed = List[UInt8](
-        120,
-        156,
-        243,
-        72,
-        205,
-        201,
-        201,
-        215,
-        81,
-        8,
-        207,
-        47,
-        202,
-        73,
-        81,
-        4,
-        0,
-        31,
-        158,
-        4,
-        106,
-    )
-    var result = decompress(compressed)
-
-    # Verify it's a List[Byte] (UInt8) and has correct content
-    testing.assert_equal(len(result), 13)
-    testing.assert_equal(result[0], 72)  # 'H'
-    testing.assert_equal(result[1], 101)  # 'e'
-    testing.assert_equal(result[4], 111)  # 'o'
-
-
 def main():
     """Run all decompress tests."""
     test_decompress_empty_data()
@@ -858,4 +826,3 @@ def main():
     test_decompress_large_data()
     test_decompress_edge_cases()
     test_decompress_constants_values()
-    test_decompress_return_type()

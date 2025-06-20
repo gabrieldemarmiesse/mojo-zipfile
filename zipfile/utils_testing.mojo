@@ -18,7 +18,8 @@ def to_py_bytes(data: Span[Byte]) -> PythonObject:
 fn to_mojo_bytes(some_data: PythonObject) raises -> List[Byte]:
     result = List[Byte]()
     for byte in some_data:
-        result.append(Byte(byte))
+        result.append(UInt8(Int(byte)))
+    return result
 
 
 fn to_mojo_string(some_data: PythonObject) raises -> String:
@@ -37,5 +38,46 @@ fn assert_lists_are_equal(
         if list1[i] != list2[i]:
             raise Error(
                 message
-                + f": Elements at index {i} differ ({list1[i]} != {list2[i]})"
+                + ": Elements at index "
+                + String(i)
+                + " differ ("
+                + String(list1[i])
+                + " != "
+                + String(list2[i])
+                + ")"
             )
+
+
+def test_mojo_vs_python_decompress(
+    test_data: Span[Byte],
+    wbits: Int = 15,
+    bufsize: Int = 16384,
+    message: String = "Mojo vs Python decompress should match",
+):
+    """Helper function to test Mojo decompress vs Python decompress."""
+    try:
+        py_zlib = Python.import_module("zlib")
+
+        # Compress with Python
+        py_data_bytes = to_py_bytes(test_data)
+        py_compressed = py_zlib.compress(py_data_bytes, wbits=wbits)
+
+        # Convert to Mojo and decompress with Mojo
+        mojo_compressed = to_mojo_bytes(py_compressed)
+
+        # Import the Mojo decompress function
+        from zipfile.zlib.compression import decompress
+
+        mojo_result = decompress(mojo_compressed, wbits=wbits, bufsize=bufsize)
+
+        # Decompress with Python
+        py_result = py_zlib.decompress(
+            py_compressed, wbits=wbits, bufsize=bufsize
+        )
+        py_result_mojo = to_mojo_bytes(py_result)
+
+        # Compare results
+        assert_lists_are_equal(mojo_result, py_result_mojo, message)
+    except e:
+        print("Error in test_mojo_vs_python_decompress:", e)
+        raise e
