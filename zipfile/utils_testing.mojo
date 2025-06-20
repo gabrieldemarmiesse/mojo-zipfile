@@ -28,8 +28,8 @@ fn to_mojo_string(some_data: PythonObject) raises -> String:
 
 
 fn assert_lists_are_equal(
-    list1: List[Byte],
-    list2: List[Byte],
+    list1: Span[Byte],
+    list2: Span[Byte],
     message: String = "Lists should be equal",
 ) raises -> None:
     if len(list1) != len(list2):
@@ -80,4 +80,49 @@ def test_mojo_vs_python_decompress(
         assert_lists_are_equal(mojo_result, py_result_mojo, message)
     except e:
         print("Error in test_mojo_vs_python_decompress:", e)
+        raise e
+
+
+def compress_string_with_python(text: String, wbits: Int = 15) -> List[Byte]:
+    """Helper function to compress a string using Python's zlib and return as Mojo bytes.
+    """
+    try:
+        py_zlib = Python.import_module("zlib")
+        text_bytes = text.as_bytes()
+        py_text_bytes = to_py_bytes(text_bytes)
+        py_compressed = py_zlib.compress(py_text_bytes, wbits=wbits)
+        return to_mojo_bytes(py_compressed)
+    except e:
+        print("Error in compress_string_with_python:", e)
+        raise e
+
+
+def generate_test_bytes_range(start: Int, end: Int) -> List[Byte]:
+    """Generate a list of bytes from start to end (inclusive)."""
+    result = List[Byte]()
+    for i in range(start, end + 1):
+        result.append(UInt8(i))
+    return result
+
+
+def generate_repeated_bytes(byte_value: UInt8, count: Int) -> List[Byte]:
+    """Generate a list of repeated bytes."""
+    result = List[Byte]()
+    for _ in range(count):
+        result.append(byte_value)
+    return result
+
+
+def compress_binary_data_with_python(
+    data: List[Byte], wbits: Int = 15
+) -> List[Byte]:
+    """Helper function to compress binary data using Python's zlib and return as Mojo bytes.
+    """
+    try:
+        py_zlib = Python.import_module("zlib")
+        py_data_bytes = to_py_bytes(data)
+        py_compressed = py_zlib.compress(py_data_bytes, wbits=wbits)
+        return to_mojo_bytes(py_compressed)
+    except e:
+        print("Error in compress_binary_data_with_python:", e)
         raise e
