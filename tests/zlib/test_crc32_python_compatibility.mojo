@@ -3,6 +3,7 @@
 import zipfile.zlib as zlib
 from testing import assert_equal
 from python import Python
+from zipfile.utils_testing import to_py_bytes
 
 
 def test_crc32_empty_data_python_compatibility():
@@ -14,7 +15,7 @@ def test_crc32_empty_data_python_compatibility():
     # Test empty data
     empty_data = List[UInt8]()
     mojo_result = zlib.crc32(empty_data)
-    py_empty_bytes = Python.evaluate("b''")
+    py_empty_bytes = to_py_bytes(empty_data)
     py_result = py_zlib.crc32(py_empty_bytes)
     assert_equal(
         Int(mojo_result), Int(py_result), "crc32 empty data should match Python"
@@ -29,7 +30,7 @@ def test_crc32_hello_python_compatibility():
     # Test simple string "hello"
     hello_data = String("hello").as_bytes()
     mojo_result = zlib.crc32(hello_data)
-    py_hello_bytes = Python.evaluate("b'hello'")
+    py_hello_bytes = to_py_bytes(hello_data)
     py_result = py_zlib.crc32(py_hello_bytes)
     assert_equal(
         Int(mojo_result), Int(py_result), "crc32 'hello' should match Python"
@@ -44,7 +45,7 @@ def test_crc32_custom_starting_value_python_compatibility():
     # Test with custom starting value
     world_data = String("world").as_bytes()
     mojo_result = zlib.crc32(world_data, 12345)
-    py_world_bytes = Python.evaluate("b'world'")
+    py_world_bytes = to_py_bytes(world_data)
     py_result = py_zlib.crc32(py_world_bytes, 12345)
     assert_equal(
         Int(mojo_result),
@@ -60,13 +61,13 @@ def test_crc32_running_checksum_python_compatibility():
     # Test concatenation/running checksum
     hello_data = String("hello").as_bytes()
     hello_crc = zlib.crc32(hello_data)
-    py_hello_bytes = Python.evaluate("b'hello'")
+    py_hello_bytes = to_py_bytes(hello_data)
     py_hello_crc = py_zlib.crc32(py_hello_bytes)
     assert_equal(Int(hello_crc), Int(py_hello_crc), "hello crc should match")
 
     space_world_data = String(" world").as_bytes()
     mojo_combined = zlib.crc32(space_world_data, hello_crc)
-    py_space_world_bytes = Python.evaluate("b' world'")
+    py_space_world_bytes = to_py_bytes(space_world_data)
     py_combined = py_zlib.crc32(py_space_world_bytes, py_hello_crc)
     assert_equal(
         Int(mojo_combined),
@@ -84,18 +85,18 @@ def test_crc32_direct_vs_running_checksum_python_compatibility():
     hello_data = String("hello").as_bytes()
     space_world_data = String(" world").as_bytes()
     hello_crc = zlib.crc32(hello_data)
-    py_hello_bytes = Python.evaluate("b'hello'")
+    py_hello_bytes = to_py_bytes(hello_data)
     py_hello_crc = py_zlib.crc32(py_hello_bytes)
 
     # Compute running checksum
     mojo_combined = zlib.crc32(space_world_data, hello_crc)
-    py_space_world_bytes = Python.evaluate("b' world'")
+    py_space_world_bytes = to_py_bytes(space_world_data)
     py_combined = py_zlib.crc32(py_space_world_bytes, py_hello_crc)
 
     # Verify this equals direct computation of "hello world"
     hello_world_data = String("hello world").as_bytes()
     mojo_direct = zlib.crc32(hello_world_data)
-    py_hello_world_bytes = Python.evaluate("b'hello world'")
+    py_hello_world_bytes = to_py_bytes(hello_world_data)
     py_direct = py_zlib.crc32(py_hello_world_bytes)
 
     assert_equal(
@@ -120,7 +121,7 @@ def test_crc32_binary_data_python_compatibility():
     for i in range(10):
         binary_data.append(UInt8(i))
     mojo_result = zlib.crc32(binary_data)
-    py_binary_bytes = Python.evaluate("bytes(range(10))")
+    py_binary_bytes = to_py_bytes(binary_data)
     py_result = py_zlib.crc32(py_binary_bytes)
     assert_equal(
         Int(mojo_result),
@@ -140,7 +141,7 @@ def test_crc32_known_values_python_compatibility():
         mojo_result = zlib.crc32(data)
 
         # Create Python bytes object and compute CRC32
-        py_bytes = Python.evaluate("b'" + test_string + "'")
+        py_bytes = to_py_bytes(data)
         py_result = py_zlib.crc32(py_bytes)
 
         assert_equal(
@@ -160,8 +161,7 @@ def test_crc32_larger_data_python_compatibility():
     mojo_result = zlib.crc32(data)
 
     # Create Python string and compute CRC32
-    py_str = "The quick brown fox jumps over the lazy dog. " * 50
-    py_bytes = Python.evaluate("b'" + py_str + "'")
+    py_bytes = to_py_bytes(data)
     py_result = py_zlib.crc32(py_bytes)
 
     assert_equal(
