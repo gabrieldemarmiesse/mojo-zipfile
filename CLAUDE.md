@@ -76,3 +76,4 @@ List is auto-cast to Span when calling a function. So it's not necessary to impl
 
 In docstrings, sentences to describle a function or an argument should always end with a "."
 
+In Mojo `Byte` is an alias for `UInt8`.
