@@ -72,53 +72,36 @@ fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
 fn uncompress(
     data: List[UInt8], expected_uncompressed_size: Int, quiet: Bool = False
 ) raises -> List[UInt8]:
-    var handle = ffi.DLHandle(_get_libz_path())
+    """Uncompress deflated data using StreamingDecompressor.
 
-    var inflateInit2 = handle.get_function[inflateInit2_type]("inflateInit2_")
-    var inflate_fn = handle.get_function[inflate_type]("inflate")
-    var inflateEnd = handle.get_function[inflateEnd_type]("inflateEnd")
+    Args:
+        data: The compressed data to decompress.
+        expected_uncompressed_size: The expected size of uncompressed data.
+        quiet: If True, suppress error logging.
 
-    var stream = ZStream(
-        next_in=data.unsafe_ptr(),
-        avail_in=UInt32(len(data)),
-        total_in=0,
-        next_out=UnsafePointer[Bytef](),
-        avail_out=0,
-        total_out=0,
-        msg=UnsafePointer[UInt8](),
-        state=UnsafePointer[UInt8](),
-        zalloc=UnsafePointer[UInt8](),
-        zfree=UnsafePointer[UInt8](),
-        opaque=UnsafePointer[UInt8](),
-        data_type=0,
-        adler=0,
-        reserved=0,
-    )
-    var out_buf = List[UInt8](capacity=expected_uncompressed_size)
-    out_buf.resize(expected_uncompressed_size, 0)
+    Returns:
+        The uncompressed data.
+    """
+    var decompressor = StreamingDecompressor()
+    decompressor.feed_input(data)
 
-    stream.next_out = out_buf.unsafe_ptr()
-    stream.avail_out = UInt32(len(out_buf))
+    var result = List[UInt8]()
+    result.reserve(expected_uncompressed_size)
 
-    # Use raw deflate by passing -15 as windowBits
-    var zlib_version = String(
-        "1.2.11"
-    )  # Confirm this matches your libz version
-    var init_res = inflateInit2(
-        UnsafePointer(to=stream),
-        -15,  # raw deflate
-        zlib_version.unsafe_cstr_ptr().bitcast[UInt8](),
-        Int32(sys.sizeof[ZStream]()),
-    )
+    # Read all available data in chunks
+    while not decompressor.is_finished():
+        var chunk = decompressor.read(
+            min(65536, expected_uncompressed_size - len(result))
+        )
+        if len(chunk) == 0:
+            break
+        result += chunk
 
-    if init_res != Z_OK:
-        _log_zlib_result(init_res, compressing=False)
-    var Z_RES = inflate_fn(UnsafePointer(to=stream), Z_FINISH)
-    _ = inflateEnd(UnsafePointer(to=stream))
-    if not quiet:
-        _log_zlib_result(Z_RES, compressing=False)
+        # Safety check to prevent infinite loops
+        if len(result) >= expected_uncompressed_size:
+            break
 
-    return out_buf[: Int(stream.total_out)]
+    return result
 
 
 struct StreamingDecompressor(Copyable, Movable):
