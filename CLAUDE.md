@@ -77,3 +77,54 @@ List is auto-cast to Span when calling a function. So it's not necessary to impl
 In docstrings, sentences to describle a function or an argument should always end with a "."
 
 In Mojo `Byte` is an alias for `UInt8`.
+
+## String to Bytes Conversion
+
+When converting strings to bytes, use the `String.as_bytes()` method instead of manually iterating:
+
+```mojo
+# Preferred - clean and efficient
+var text = "Hello, World!"
+var bytes = text.as_bytes()
+
+# Avoid - manual conversion
+var manual_bytes = List[UInt8]()
+for i in range(len(text)):
+    manual_bytes.append(ord(text[i]))
+```
+
+## Python Interoperability in Tests
+
+You can call Python functions directly from Mojo test files to ensure compatibility. Use this pattern for testing against Python's standard library:
+
+```mojo
+from python import Python
+from zipfile.utils_testing import to_py_bytes
+
+def test_function_python_compatibility():
+    """Test that our function matches Python's behavior."""
+    # Import Python module
+    py_zlib = Python.import_module("zlib")
+    
+    # Test data
+    test_data = "Hello, World!".as_bytes()
+    
+    # Call Mojo function
+    mojo_result = our_function(test_data)
+    
+    # Call Python function
+    py_data_bytes = to_py_bytes(test_data)
+    py_result = py_zlib.function_name(py_data_bytes)
+    
+    # Convert Python result to Mojo for comparison
+    py_result_list = List[Byte]()
+    for i in range(len(py_result)):
+        py_result_list.append(UInt8(Int(py_result[i])))
+    
+    # Compare results
+    assert_equal(len(mojo_result), len(py_result_list))
+    for i in range(len(mojo_result)):
+        assert_equal(mojo_result[i], py_result_list[i])
+```
+
+Use `to_py_bytes()` utility function from `zipfile.utils_testing` to convert Mojo bytes to Python bytes objects.
