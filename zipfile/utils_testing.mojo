@@ -83,46 +83,16 @@ def test_mojo_vs_python_decompress(
         raise e
 
 
-def compress_string_with_python(text: String, wbits: Int = 15) -> List[Byte]:
-    """Helper function to compress a string using Python's zlib and return as Mojo bytes.
-    """
-    try:
-        py_zlib = Python.import_module("zlib")
-        text_bytes = text.as_bytes()
-        py_text_bytes = to_py_bytes(text_bytes)
-        py_compressed = py_zlib.compress(py_text_bytes, wbits=wbits)
-        return to_mojo_bytes(py_compressed)
-    except e:
-        print("Error in compress_string_with_python:", e)
-        raise e
-
-
-def generate_test_bytes_range(start: Int, end: Int) -> List[Byte]:
-    """Generate a list of bytes from start to end (inclusive)."""
-    result = List[Byte]()
-    for i in range(start, end + 1):
-        result.append(UInt8(i))
-    return result
-
-
-def generate_repeated_bytes(byte_value: UInt8, count: Int) -> List[Byte]:
-    """Generate a list of repeated bytes."""
-    result = List[Byte]()
-    for _ in range(count):
-        result.append(byte_value)
-    return result
+def compress_string_with_python(
+    text: StringSlice, wbits: Int = 15
+) -> List[Byte]:
+    return compress_binary_data_with_python(text.as_bytes(), wbits=wbits)
 
 
 def compress_binary_data_with_python(
-    data: List[Byte], wbits: Int = 15
+    data: Span[Byte], wbits: Int = 15
 ) -> List[Byte]:
-    """Helper function to compress binary data using Python's zlib and return as Mojo bytes.
-    """
-    try:
-        py_zlib = Python.import_module("zlib")
-        py_data_bytes = to_py_bytes(data)
-        py_compressed = py_zlib.compress(py_data_bytes, wbits=wbits)
-        return to_mojo_bytes(py_compressed)
-    except e:
-        print("Error in compress_binary_data_with_python:", e)
-        raise e
+    py_zlib = Python.import_module("zlib")
+    py_data_bytes = to_py_bytes(data)
+    py_compressed = py_zlib.compress(py_data_bytes, wbits=wbits)
+    return to_mojo_bytes(py_compressed)

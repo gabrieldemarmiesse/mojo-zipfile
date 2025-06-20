@@ -10,8 +10,6 @@ from zipfile.zlib.constants import MAX_WBITS, DEF_BUF_SIZE
 from zipfile.utils_testing import (
     assert_lists_are_equal,
     compress_string_with_python,
-    generate_test_bytes_range,
-    generate_repeated_bytes,
     compress_binary_data_with_python,
 )
 
@@ -97,15 +95,13 @@ fn test_decompress_numbers_pattern() raises:
 fn test_decompress_binary_data() raises:
     """Test decompressing binary data (all bytes 0-255)."""
     # Generate binary data (0x00 to 0xFF) - doesn't compress well
-    var binary_data = generate_test_bytes_range(0, 255)
+    var binary_data = [UInt8(i) for i in range(256)]
     var compressed = compress_binary_data_with_python(binary_data, wbits=15)
-    var expected = generate_test_bytes_range(0, 255)
 
     var result = decompress(compressed)
-    testing.assert_equal(len(result), 256)
 
     assert_lists_are_equal(
-        result, expected, "Binary data decompression should match expected"
+        result, binary_data, "Binary data decompression should match expected"
     )
 
 
