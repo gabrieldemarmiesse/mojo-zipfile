@@ -70,7 +70,7 @@ fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
         )
 
 
-fn uncompress(
+fn decompress(
     data: Span[Byte], /, wbits: Int = MAX_WBITS, bufsize: Int = DEF_BUF_SIZE
 ) raises -> List[Byte]:
     """Decompress deflated data using zlib decompression.

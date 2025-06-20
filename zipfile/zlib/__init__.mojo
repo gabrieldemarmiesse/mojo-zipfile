@@ -3,5 +3,5 @@ from .checksums import (
     crc32,
     CRC32,
 )
-from .compression import compress
+from .compression import compress, decompress
 from .constants import MAX_WBITS
