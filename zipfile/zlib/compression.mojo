@@ -330,69 +330,64 @@ fn compress(
     Returns:
         Compressed data as List[Byte].
     """
-    try:
-        var handle = ffi.DLHandle(_get_libz_path())
+    var handle = ffi.DLHandle(_get_libz_path())
 
-        var deflateInit2 = handle.get_function[deflateInit2_type](
-            "deflateInit2_"
-        )
-        var deflate_fn = handle.get_function[deflate_type]("deflate")
-        var deflateEnd = handle.get_function[deflateEnd_type]("deflateEnd")
+    var deflateInit2 = handle.get_function[deflateInit2_type]("deflateInit2_")
+    var deflate_fn = handle.get_function[deflate_type]("deflate")
+    var deflateEnd = handle.get_function[deflateEnd_type]("deflateEnd")
 
-        var stream = ZStream(
-            next_in=data.unsafe_ptr(),
-            avail_in=UInt32(len(data)),
-            total_in=0,
-            next_out=UnsafePointer[Bytef](),
-            avail_out=0,
-            total_out=0,
-            msg=UnsafePointer[UInt8](),
-            state=UnsafePointer[UInt8](),
-            zalloc=UnsafePointer[UInt8](),
-            zfree=UnsafePointer[UInt8](),
-            opaque=UnsafePointer[UInt8](),
-            data_type=0,
-            adler=0,
-            reserved=0,
-        )
+    var stream = ZStream(
+        next_in=data.unsafe_ptr(),
+        avail_in=UInt32(len(data)),
+        total_in=0,
+        next_out=UnsafePointer[Bytef](),
+        avail_out=0,
+        total_out=0,
+        msg=UnsafePointer[UInt8](),
+        state=UnsafePointer[UInt8](),
+        zalloc=UnsafePointer[UInt8](),
+        zfree=UnsafePointer[UInt8](),
+        opaque=UnsafePointer[UInt8](),
+        data_type=0,
+        adler=0,
+        reserved=0,
+    )
 
-        # Estimate compressed size (upper bound)
-        var estimated_size = len(data) + (len(data) // 1000) + 12
-        var out_buf = List[UInt8](capacity=estimated_size)
-        out_buf.resize(estimated_size, 0)
+    # Estimate compressed size (upper bound)
+    var estimated_size = len(data) + (len(data) // 1000) + 12
+    var out_buf = List[UInt8](capacity=estimated_size)
+    out_buf.resize(estimated_size, 0)
 
-        stream.next_out = out_buf.unsafe_ptr()
-        stream.avail_out = UInt32(len(out_buf))
+    stream.next_out = out_buf.unsafe_ptr()
+    stream.avail_out = UInt32(len(out_buf))
 
-        # Set compression level, defaulting to Z_DEFAULT_COMPRESSION if -1
-        var compression_level = Int32(level)
-        if level == -1:
-            compression_level = Z_DEFAULT_COMPRESSION
+    # Set compression level, defaulting to Z_DEFAULT_COMPRESSION if -1
+    var compression_level = Int32(level)
+    if level == -1:
+        compression_level = Z_DEFAULT_COMPRESSION
 
-        var zlib_version = String("1.2.11")
-        var init_res = deflateInit2(
-            UnsafePointer(to=stream),
-            compression_level,
-            Z_DEFLATED,
-            Int32(wbits),  # Use wbits parameter for window size/format
-            8,  # memLevel
-            Z_DEFAULT_STRATEGY,
-            zlib_version.unsafe_cstr_ptr().bitcast[UInt8](),
-            Int32(sys.sizeof[ZStream]()),
-        )
+    var zlib_version = String("1.2.11")
+    var init_res = deflateInit2(
+        UnsafePointer(to=stream),
+        compression_level,
+        Z_DEFLATED,
+        Int32(wbits),  # Use wbits parameter for window size/format
+        8,  # memLevel
+        Z_DEFAULT_STRATEGY,
+        zlib_version.unsafe_cstr_ptr().bitcast[UInt8](),
+        Int32(sys.sizeof[ZStream]()),
+    )
 
-        if init_res != Z_OK:
-            _log_zlib_result(init_res, compressing=True)
-            raise Error("Failed to initialize deflate stream")
+    if init_res != Z_OK:
+        _log_zlib_result(init_res, compressing=True)
+        raise Error("Failed to initialize deflate stream")
 
-        var Z_RES = deflate_fn(UnsafePointer(to=stream), Z_FINISH)
-        _ = deflateEnd(UnsafePointer(to=stream))
+    var Z_RES = deflate_fn(UnsafePointer(to=stream), Z_FINISH)
+    _ = deflateEnd(UnsafePointer(to=stream))
 
-        _log_zlib_result(Z_RES, compressing=True)
+    _log_zlib_result(Z_RES, compressing=True)
 
-        if Z_RES != Z_STREAM_END:
-            raise Error("Compression failed with code " + String(Z_RES))
-        out_buf.resize(Int(stream.total_out), 0)
-        return out_buf^
-    except e:
-        raise Error("Compression failed: " + String(e))
+    if Z_RES != Z_STREAM_END:
+        raise Error("Compression failed with code " + String(Z_RES))
+    out_buf.resize(Int(stream.total_out), 0)
+    return out_buf^
