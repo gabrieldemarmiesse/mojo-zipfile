@@ -11,7 +11,6 @@ from zipfile.utils_testing import (
     to_py_bytes,
     to_mojo_bytes,
     assert_lists_are_equal,
-    test_mojo_vs_python_decompress,
 )
 from random import seed, random_ui64
 
