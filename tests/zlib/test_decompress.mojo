@@ -124,29 +124,15 @@ fn test_decompress_different_buffer_sizes() raises:
     var compressed = compress_string_with_python(test_string, wbits=15)
     var expected = test_string.as_bytes()
 
-    # Test with very small buffer
-    var result_small = decompress(compressed, bufsize=1)
-    testing.assert_equal(len(result_small), 13)
-    for i in range(len(expected)):
-        testing.assert_equal(result_small[i], expected[i])
-
-    # Test with medium buffer
-    var result_medium = decompress(compressed, bufsize=16)
-    testing.assert_equal(len(result_medium), 13)
-    for i in range(len(expected)):
-        testing.assert_equal(result_medium[i], expected[i])
-
-    # Test with large buffer
-    var result_large = decompress(compressed, bufsize=65536)
-    testing.assert_equal(len(result_large), 13)
-    for i in range(len(expected)):
-        testing.assert_equal(result_large[i], expected[i])
-
-    # Test with default buffer size
-    var result_default = decompress(compressed)  # Uses DEF_BUF_SIZE
-    testing.assert_equal(len(result_default), 13)
-    for i in range(len(expected)):
-        testing.assert_equal(result_default[i], expected[i])
+    for bufsize in [1, 16, 65536, DEF_BUF_SIZE]:
+        var result = decompress(compressed, bufsize=bufsize)
+        assert_lists_are_equal(
+            result,
+            expected,
+            "Decompression with bufsize "
+            + String(bufsize)
+            + " should match expected",
+        )
 
 
 fn test_decompress_positional_only_parameter() raises:
@@ -159,20 +145,31 @@ fn test_decompress_positional_only_parameter() raises:
     var result2 = decompress(compressed, wbits=MAX_WBITS)
     var result3 = decompress(compressed, wbits=MAX_WBITS, bufsize=DEF_BUF_SIZE)
 
-    testing.assert_equal(len(result1), 13)
-    testing.assert_equal(len(result2), 13)
-    testing.assert_equal(len(result3), 13)
+    assert_lists_are_equal(
+        result1,
+        test_string.as_bytes(),
+        "Decompression without options should match expected",
+    )
+    assert_lists_are_equal(
+        result2,
+        test_string.as_bytes(),
+        "Decompression with wbits should match expected",
+    )
+    assert_lists_are_equal(
+        result3,
+        test_string.as_bytes(),
+        "Decompression with wbits and bufsize should match expected",
+    )
 
 
 fn test_decompress_large_data() raises:
     """Test decompressing larger data set."""
     # Large repeated text compressed with zlib (should compress very well)
-    var test_string = "The quick brown fox jumps over the lazy dog. " * 20
+    var test_string = "The quick brown fox jumps over the lazy dog. " * 2000
     var compressed = compress_string_with_python(test_string, wbits=15)
     var expected = test_string.as_bytes()
 
     var result = decompress(compressed)
-    testing.assert_equal(len(result), 900)  # "The quick brown fox..." * 20
 
     assert_lists_are_equal(
         result, expected, "Large data decompression should match expected"
@@ -182,14 +179,8 @@ fn test_decompress_large_data() raises:
 fn test_decompress_edge_cases() raises:
     """Test edge cases and potential error conditions."""
     # Test with empty compressed data (should fail, but let's see how it handles it)
-    try:
-        var empty_data = List[UInt8]()
-        _ = decompress(empty_data)
-        # If we get here, the function didn't raise an error - that's unexpected
-        testing.assert_true(False, "Expected decompress of empty data to fail")
-    except:
-        # Expected to fail - this is good
-        pass
+    with testing.assert_raises():
+        _ = decompress(List[UInt8]())
 
 
 fn test_decompress_constants_values() raises:
