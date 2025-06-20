@@ -23,6 +23,7 @@ from .constants import (
     Z_DEFLATED,
     Z_DEFAULT_STRATEGY,
     MAX_WBITS,
+    DEF_BUF_SIZE,
 )
 
 
@@ -70,36 +71,33 @@ fn _log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
 
 
 fn uncompress(
-    data: List[UInt8], expected_uncompressed_size: Int, quiet: Bool = False
-) raises -> List[UInt8]:
-    """Uncompress deflated data using StreamingDecompressor.
+    data: Span[Byte], /, wbits: Int = MAX_WBITS, bufsize: Int = DEF_BUF_SIZE
+) raises -> List[Byte]:
+    """Decompress deflated data using zlib decompression.
 
     Args:
         data: The compressed data to decompress.
-        expected_uncompressed_size: The expected size of uncompressed data.
-        quiet: If True, suppress error logging.
+        wbits: Window bits parameter controlling format and window size
+               - Positive values (9-15): zlib format with header and trailer
+               - Negative values (-9 to -15): raw deflate format
+               - Values 25-31: gzip format.
+        bufsize: Initial size of the output buffer.
 
     Returns:
-        The uncompressed data.
+        The decompressed data.
     """
-    var decompressor = StreamingDecompressor()
+    var decompressor = StreamingDecompressor(wbits)
     decompressor.feed_input(data)
 
     var result = List[UInt8]()
-    result.reserve(expected_uncompressed_size)
+    result.reserve(bufsize)
 
     # Read all available data in chunks
     while not decompressor.is_finished():
-        var chunk = decompressor.read(
-            min(65536, expected_uncompressed_size - len(result))
-        )
+        var chunk = decompressor.read(min(bufsize, 65536))
         if len(chunk) == 0:
             break
         result += chunk
-
-        # Safety check to prevent infinite loops
-        if len(result) >= expected_uncompressed_size:
-            break
 
     return result
 
@@ -118,8 +116,9 @@ struct StreamingDecompressor(Copyable, Movable):
     var output_buffer: List[UInt8]
     var output_pos: Int
     var output_available: Int
+    var wbits: Int
 
-    fn __init__(out self) raises:
+    fn __init__(out self, wbits: Int = MAX_WBITS) raises:
         self.handle = ffi.DLHandle(_get_libz_path())
         self.inflate_fn = self.handle.get_function[inflate_type]("inflate")
         self.inflateEnd = self.handle.get_function[inflateEnd_type](
@@ -151,6 +150,7 @@ struct StreamingDecompressor(Copyable, Movable):
         self.output_buffer.resize(65536, 0)
         self.output_pos = 0
         self.output_available = 0
+        self.wbits = wbits
 
     fn initialize(mut self) raises:
         """Initialize the zlib stream for decompression."""
@@ -163,7 +163,7 @@ struct StreamingDecompressor(Copyable, Movable):
         var zlib_version = String("1.2.11")
         var init_res = inflateInit2(
             UnsafePointer(to=self.stream),
-            -15,  # raw deflate
+            Int32(self.wbits),
             zlib_version.unsafe_cstr_ptr().bitcast[UInt8](),
             Int32(sys.sizeof[ZStream]()),
         )
@@ -204,6 +204,7 @@ struct StreamingDecompressor(Copyable, Movable):
         self.output_buffer.resize(65536, 0)
         self.output_pos = 0
         self.output_available = 0
+        self.wbits = existing.wbits
 
     fn __moveinit__(out self, owned existing: Self):
         """Move constructor."""
@@ -217,10 +218,12 @@ struct StreamingDecompressor(Copyable, Movable):
         self.output_buffer = existing.output_buffer^
         self.output_pos = existing.output_pos
         self.output_available = existing.output_available
+        self.wbits = existing.wbits
 
-    fn feed_input(mut self, data: List[UInt8]):
+    fn feed_input(mut self, data: Span[Byte]):
         """Feed compressed input data to the decompressor."""
-        self.input_buffer += data
+        for byte in data:
+            self.input_buffer.append(byte)
 
     fn _decompress_available(mut self) raises -> Bool:
         """Try to decompress some data from input buffer. Returns True if output was produced.
