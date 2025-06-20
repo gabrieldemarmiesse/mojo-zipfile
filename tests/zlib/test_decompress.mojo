@@ -15,7 +15,6 @@ from zipfile.utils_testing import (
 
 
 fn test_decompress_empty_data() raises:
-    """Test decompressing empty data."""
     # Generate compressed empty data dynamically
     var compressed = compress_string_with_python("", wbits=15)
     var result = decompress(compressed)
@@ -23,14 +22,11 @@ fn test_decompress_empty_data() raises:
 
 
 fn test_decompress_hello_world_zlib() raises:
-    """Test decompressing "Hello, World!" with zlib format."""
     var test_string = "Hello, World!"
     var compressed = compress_string_with_python(test_string, wbits=15)
     var expected = test_string.as_bytes()
 
     var result = decompress(compressed)
-    testing.assert_equal(len(result), len(expected))
-
     assert_lists_are_equal(
         result, expected, "Hello World decompression should match expected"
     )
@@ -51,7 +47,6 @@ fn test_decompress_hello_world_gzip() raises:
 
 
 fn test_decompress_short_string() raises:
-    """Test decompressing short string "Hi"."""
     var test_string = "Hi"
     var compressed = compress_string_with_python(test_string, wbits=15)
     var expected = test_string.as_bytes()
@@ -68,10 +63,9 @@ fn test_decompress_repeated_pattern() raises:
     """Test decompressing repeated pattern (100 'A's)."""
     var test_string = "A" * 100
     var compressed = compress_string_with_python(test_string, wbits=15)
-    var expected = [UInt8(65) for _ in range(100)]  # 'A' = ASCII 65
+    var expected = test_string.as_bytes()
 
     var result = decompress(compressed)
-    testing.assert_equal(len(result), 100)
 
     assert_lists_are_equal(
         result, expected, "Repeated pattern decompression should match expected"
@@ -85,7 +79,6 @@ fn test_decompress_numbers_pattern() raises:
     var expected = test_string.as_bytes()
 
     var result = decompress(compressed)
-    testing.assert_equal(len(result), 100)
 
     assert_lists_are_equal(
         result, expected, "Numbers pattern decompression should match expected"
@@ -113,17 +106,13 @@ fn test_decompress_different_wbits_values() raises:
     # Test with default MAX_WBITS (15) - zlib format
     var zlib_compressed = compress_string_with_python(test_string, wbits=15)
     var result_zlib = decompress(zlib_compressed)  # Default wbits=MAX_WBITS
-    testing.assert_equal(len(result_zlib), len(expected))
+    assert_lists_are_equal(
+        result_zlib, expected, "zlib decompression should match expected"
+    )
 
     # Test with gzip format (wbits=31)
     var gzip_compressed = compress_string_with_python(test_string, wbits=31)
     var result_gzip = decompress(gzip_compressed, wbits=31)
-    testing.assert_equal(len(result_gzip), len(expected))
-
-    # Both should produce the same result
-    assert_lists_are_equal(
-        result_zlib, expected, "zlib decompression should match expected"
-    )
     assert_lists_are_equal(
         result_gzip, expected, "gzip decompression should match expected"
     )
