@@ -4,8 +4,7 @@ This module directly compares outputs between Mojo and Python implementations.
 """
 
 import testing
-from zipfile.zlib.compression import decompress, compress
-from zipfile.zlib.constants import MAX_WBITS, DEF_BUF_SIZE
+from zipfile import zlib
 
 
 fn test_decompress_compress_roundtrip() raises:
@@ -14,10 +13,10 @@ fn test_decompress_compress_roundtrip() raises:
     var original_bytes = original_text.as_bytes()
 
     # Compress with our compress function
-    var compressed = compress(original_bytes)
+    var compressed = zlib.compress(original_bytes)
 
     # Decompress with our decompress function
-    var decompressed = decompress(compressed)
+    var decompressed = zlib.decompress(compressed)
 
     # Should get back original data
     testing.assert_equal(len(decompressed), len(original_bytes))
@@ -32,13 +31,13 @@ fn test_decompress_different_compression_levels() raises:
 
     # Test with different compression levels (using compress function)
     # Level 1 (fast)
-    var compressed_fast = compress(test_bytes, level=1)
-    var decompressed_fast = decompress(compressed_fast)
+    var compressed_fast = zlib.compress(test_bytes, level=1)
+    var decompressed_fast = zlib.decompress(compressed_fast)
     testing.assert_equal(len(decompressed_fast), len(test_bytes))
 
     # Level 9 (best compression)
-    var compressed_best = compress(test_bytes, level=9)
-    var decompressed_best = decompress(compressed_best)
+    var compressed_best = zlib.compress(test_bytes, level=9)
+    var decompressed_best = zlib.decompress(compressed_best)
     testing.assert_equal(len(decompressed_best), len(test_bytes))
 
     # Both should produce same result
@@ -60,8 +59,8 @@ fn test_decompress_large_data_roundtrip() raises:
         large_data.extend(base_bytes)
 
     # Compress and decompress
-    var compressed = compress(large_data)
-    var decompressed = decompress(compressed)
+    var compressed = zlib.compress(large_data)
+    var decompressed = zlib.decompress(compressed)
 
     # Verify
     testing.assert_equal(len(decompressed), len(large_data))
@@ -75,8 +74,8 @@ fn test_decompress_wbits_compatibility() raises:
     var test_bytes = test_data.as_bytes()
 
     # Test with default wbits (zlib format)
-    var compressed_zlib = compress(test_bytes)  # Default wbits=MAX_WBITS
-    var decompressed_zlib = decompress(
+    var compressed_zlib = zlib.compress(test_bytes)  # Default wbits=MAX_WBITS
+    var decompressed_zlib = zlib.decompress(
         compressed_zlib
     )  # Default wbits=MAX_WBITS
 
@@ -85,8 +84,10 @@ fn test_decompress_wbits_compatibility() raises:
         testing.assert_equal(decompressed_zlib[i], test_bytes[i])
 
     # Test with raw deflate format
-    var compressed_raw = compress(test_bytes, wbits=-MAX_WBITS)
-    var decompressed_raw = decompress(compressed_raw, wbits=-MAX_WBITS)
+    var compressed_raw = zlib.compress(test_bytes, wbits=-zlib.MAX_WBITS)
+    var decompressed_raw = zlib.decompress(
+        compressed_raw, wbits=-zlib.MAX_WBITS
+    )
 
     testing.assert_equal(len(decompressed_raw), len(test_bytes))
     for i in range(len(test_bytes)):
@@ -100,8 +101,8 @@ fn test_decompress_various_data_types() raises:
     for _ in range(1000):
         repeated.append(65)  # 'A'
 
-    var compressed_repeated = compress(repeated)
-    var decompressed_repeated = decompress(compressed_repeated)
+    var compressed_repeated = zlib.compress(repeated)
+    var decompressed_repeated = zlib.decompress(compressed_repeated)
     testing.assert_equal(len(decompressed_repeated), 1000)
     for i in range(1000):
         testing.assert_equal(decompressed_repeated[i], 65)
@@ -111,8 +112,8 @@ fn test_decompress_various_data_types() raises:
     for i in range(256):
         random_like.append(UInt8(i))
 
-    var compressed_random = compress(random_like)
-    var decompressed_random = decompress(compressed_random)
+    var compressed_random = zlib.compress(random_like)
+    var decompressed_random = zlib.decompress(compressed_random)
     testing.assert_equal(len(decompressed_random), 256)
     for i in range(256):
         testing.assert_equal(decompressed_random[i], UInt8(i))
@@ -122,8 +123,8 @@ fn test_decompress_empty_data_roundtrip() raises:
     """Test compress/decompress roundtrip with empty data."""
     var empty_data = List[UInt8]()
 
-    var compressed = compress(empty_data)
-    var decompressed = decompress(compressed)
+    var compressed = zlib.compress(empty_data)
+    var decompressed = zlib.decompress(compressed)
 
     testing.assert_equal(len(decompressed), 0)
 

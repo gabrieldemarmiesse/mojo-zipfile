@@ -1,4 +1,5 @@
 from python import PythonObject, Python
+from zipfile import zlib
 
 
 def to_py_bytes(data: String) -> PythonObject:
@@ -66,9 +67,10 @@ def test_mojo_vs_python_decompress(
         mojo_compressed = to_mojo_bytes(py_compressed)
 
         # Import the Mojo decompress function
-        from zipfile.zlib.compression import decompress
 
-        mojo_result = decompress(mojo_compressed, wbits=wbits, bufsize=bufsize)
+        mojo_result = zlib.decompress(
+            mojo_compressed, wbits=wbits, bufsize=bufsize
+        )
 
         # Decompress with Python
         py_result = py_zlib.decompress(

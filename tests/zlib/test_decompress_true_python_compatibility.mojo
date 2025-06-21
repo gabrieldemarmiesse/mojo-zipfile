@@ -4,7 +4,7 @@ This module directly compares outputs between Mojo and Python implementations
 by calling Python's zlib.decompress in the same process.
 """
 
-import zipfile.zlib as zlib
+from zipfile import zlib
 from testing import assert_equal, assert_true
 from python import Python
 from zipfile.utils_testing import (

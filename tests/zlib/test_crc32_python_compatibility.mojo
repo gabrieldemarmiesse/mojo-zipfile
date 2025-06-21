@@ -1,6 +1,6 @@
 """Test zipfile.zlib.crc32 compatibility with Python's zlib.crc32."""
 
-import zipfile.zlib as zlib
+from zipfile import zlib
 from testing import assert_equal
 from python import Python
 from zipfile.utils_testing import to_py_bytes

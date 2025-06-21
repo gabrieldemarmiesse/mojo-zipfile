@@ -1,6 +1,6 @@
 """Test zipfile.zlib.compress compatibility with Python's zlib.compress."""
 
-import zipfile.zlib as zlib
+from zipfile import zlib
 from testing import assert_equal, assert_true
 from python import Python
 from zipfile.utils_testing import to_py_bytes

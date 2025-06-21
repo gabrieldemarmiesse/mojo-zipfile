@@ -5,8 +5,7 @@ to ensure compatibility and correctness.
 """
 
 import testing
-from zipfile.zlib.compression import decompress
-from zipfile.zlib.constants import MAX_WBITS, DEF_BUF_SIZE
+from zipfile.zlib import decompress, MAX_WBITS, DEF_BUF_SIZE
 from zipfile.utils_testing import (
     assert_lists_are_equal,
     compress_string_with_python,
