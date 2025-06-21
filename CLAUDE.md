@@ -199,3 +199,5 @@ def test_specific_error():
 ```
 
 **Important**: Use `assert_raises()` as a context manager with `with` statement, not as a function call with lambda. The context manager pattern is the correct and idiomatic way to test exceptions in Mojo.
+
+The files in zlib are actually from a github repository. So do not touch them. They are just vendored.
