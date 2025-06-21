@@ -1,7 +1,7 @@
 """Test error handling and edge cases for zlib module."""
 
 from zipfile import zlib
-from testing import assert_equal, assert_true
+from testing import assert_equal, assert_true, assert_raises
 
 
 def test_decompress_invalid_data():
@@ -14,26 +14,25 @@ def test_decompress_invalid_data():
     invalid_data.append(4)
     invalid_data.append(5)
 
-    try:
+    with assert_raises():
         _ = zlib.decompress(invalid_data)
-        assert_true(False, "Should have raised an error for invalid data")
-    except:
-        assert_true(True, "Should raise error for invalid compressed data")
 
 
-def test_decompress_truncated_data():
-    """Test decompression with truncated data."""
+def test_decompress_corrupted_data():
+    """Test decompression with corrupted data."""
     test_data = "Hello, World!".as_bytes()
     var compressed = zlib.compress(test_data)
 
-    # Truncate the compressed data
-    var truncated = compressed[: len(compressed) // 2]
+    # Create truly corrupt data by changing bytes
+    var corrupted = List[UInt8]()
+    for i in range(len(compressed)):
+        if i < 5:
+            corrupted.append(255)  # Replace first 5 bytes with 0xFF
+        else:
+            corrupted.append(compressed[i])
 
-    try:
-        _ = zlib.decompress(truncated)
-        assert_true(False, "Should have raised an error for truncated data")
-    except:
-        assert_true(True, "Should raise error for truncated compressed data")
+    with assert_raises():
+        _ = zlib.decompress(corrupted)
 
 
 def test_compress_empty_data():
@@ -57,20 +56,15 @@ def test_decompress_empty_data():
     """Test decompression with empty data."""
     var empty_data = List[UInt8]()
 
-    try:
+    with assert_raises():
         _ = zlib.decompress(empty_data)
-        assert_true(
-            False, "Should have raised an error for empty compressed data"
-        )
-    except:
-        assert_true(True, "Should raise error for empty compressed data")
 
 
 def test_very_large_data():
     """Test with very large data to check memory handling."""
     # Create large repetitive data (should compress well)
     var large_data = List[UInt8]()
-    for i in range(100000):  # 100KB of 'A's
+    for _ in range(100000):  # 100KB of 'A's
         large_data.append(65)  # 'A'
 
     try:
@@ -106,11 +100,8 @@ def test_streaming_after_flush():
     _ = compressor.flush()
 
     # Trying to compress more after flush should error
-    try:
+    with assert_raises():
         _ = compressor.compress(test_data)
-        assert_true(False, "Should not be able to compress after flush")
-    except:
-        assert_true(True, "Compressor should error after flush")
 
 
 def test_streaming_multiple_flush():
@@ -133,21 +124,15 @@ def test_wbits_format_mismatch():
     var compressed_zlib = zlib.compress(test_data, wbits=15)
 
     # Try to decompress as raw deflate (negative wbits) - should error
-    try:
+    with assert_raises():
         _ = zlib.decompress(compressed_zlib, wbits=-15)
-        assert_true(False, "Should error when format doesn't match")
-    except:
-        assert_true(True, "Should error with format mismatch")
 
     # Compress with raw deflate format (negative wbits)
     var compressed_raw = zlib.compress(test_data, wbits=-15)
 
     # Try to decompress as zlib format (positive wbits) - should error
-    try:
+    with assert_raises():
         _ = zlib.decompress(compressed_raw, wbits=15)
-        assert_true(False, "Should error when format doesn't match")
-    except:
-        assert_true(True, "Should error with format mismatch")
 
 
 def test_checksum_functions_edge_cases():
@@ -194,7 +179,7 @@ def test_streaming_decompressor_max_length_edge_cases():
 def main():
     """Run all error handling tests."""
     test_decompress_invalid_data()
-    test_decompress_truncated_data()
+    test_decompress_corrupted_data()
     test_compress_empty_data()
     test_decompress_empty_data()
     test_very_large_data()

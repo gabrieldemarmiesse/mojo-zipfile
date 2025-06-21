@@ -177,3 +177,25 @@ test_mojo_vs_python_decompress(
     message="gzip format should match Python"
 )
 ```
+
+## Testing Error Conditions
+
+For testing error conditions and exceptions, use Mojo's `assert_raises` as a context manager:
+
+```mojo
+from testing import assert_raises
+
+# Test that a function raises an error
+def test_invalid_input():
+    var invalid_data = List[UInt8](1, 2, 3, 4, 5)
+    
+    with assert_raises():
+        _ = zlib.decompress(invalid_data)
+
+# Test that an error contains specific text
+def test_specific_error():
+    with assert_raises(contains="File not found"):
+        _ = zip_file.read("nonexistent.txt")
+```
+
+**Important**: Use `assert_raises()` as a context manager with `with` statement, not as a function call with lambda. The context manager pattern is the correct and idiomatic way to test exceptions in Mojo.
