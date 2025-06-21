@@ -179,7 +179,7 @@ fn test_decompress_large_data() raises:
 fn test_decompress_edge_cases() raises:
     """Test edge cases and potential error conditions."""
     # Test with empty compressed data (should fail, but let's see how it handles it)
-    with testing.assert_raises():
+    with testing.assert_raises(contains="Cannot decompress empty data"):
         _ = decompress(List[UInt8]())
 
 
