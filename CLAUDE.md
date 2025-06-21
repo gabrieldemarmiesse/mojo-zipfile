@@ -13,7 +13,7 @@ This is a Mojo implementation of a ZIP file library that follows the Python zipf
 pixi run test
 ```
 
-**Note**: The `pixi run test` command runs the complete test suite (all 90+ tests). When this command succeeds, it means all functionality is working correctly. There is no need to run individual test files separately unless debugging a specific issue.
+**Note**: The `pixi run test` command runs the complete test suite (all 94+ tests). When this command succeeds, it means all functionality is working correctly. There is no need to run individual test files separately unless debugging a specific issue.
 
 ## Architecture
 
@@ -62,6 +62,28 @@ writer = zip_file.open_to_write("file.txt", "w", zipfile.ZIP_DEFLATED, compressl
 
 Tests use Python's zipfile module to create reference ZIP files and verify compatibility. The `tests_helper.py` provides utilities for creating test ZIP files with different compression methods.
 
+### Streaming Compression/Decompression API
+
+Following Python's zlib API, the library provides streaming compression and decompression objects:
+
+**Decompression Object API:**
+```mojo
+var decomp = zlib.decompressobj(wbits=15)  # Create decompression object
+var chunk1 = decomp.decompress(compressed_data_part1)  # Decompress incrementally
+var chunk2 = decomp.decompress(compressed_data_part2)  # Continue decompression
+var final = decomp.flush()  # Get any remaining data
+var copy = decomp.copy()  # Create a copy of the decompressor
+```
+
+**Compression Object API:**
+```mojo
+var comp = zlib.compressobj(level=6, wbits=15)  # Create compression object
+var chunk1 = comp.compress(data_part1)  # Compress incrementally  
+var chunk2 = comp.compress(data_part2)  # Continue compression
+var final = comp.flush()  # Finalize and get remaining compressed data
+var copy = comp.copy()  # Create a copy of the compressor
+```
+
 ## Important Implementation Notes
 
 - Negative file seek offsets are broken in Mojo, affecting some ZIP format operations
@@ -69,6 +91,7 @@ Tests use Python's zipfile module to create reference ZIP files and verify compa
 - CRC-32 and Adler-32 are implemented in pure Mojo without external dependencies
 - CRC-32 verification is mandatory and automatically performed during read operations
 - File writing uses progressive approach with automatic CRC/size backfilling
+- Streaming compression/decompression objects match Python's zlib API for compatibility
 
 ## Additional information about Mojo
 Since the Mojo language is pretty new, the Mojo repository can be found in `modular/` with a memory file at @modular/CLAUDE.md . The files in the `modular/` directory should never be updated and are only here as a reference to understand how the Mojo language works. Whenever in doubt, search the code in this directory.
@@ -154,3 +177,25 @@ test_mojo_vs_python_decompress(
     message="gzip format should match Python"
 )
 ```
+
+## Testing Error Conditions
+
+For testing error conditions and exceptions, use Mojo's `assert_raises` as a context manager:
+
+```mojo
+from testing import assert_raises
+
+# Test that a function raises an error
+def test_invalid_input():
+    var invalid_data = List[UInt8](1, 2, 3, 4, 5)
+    
+    with assert_raises():
+        _ = zlib.decompress(invalid_data)
+
+# Test that an error contains specific text
+def test_specific_error():
+    with assert_raises(contains="File not found"):
+        _ = zip_file.read("nonexistent.txt")
+```
+
+**Important**: Use `assert_raises()` as a context manager with `with` statement, not as a function call with lambda. The context manager pattern is the correct and idiomatic way to test exceptions in Mojo.

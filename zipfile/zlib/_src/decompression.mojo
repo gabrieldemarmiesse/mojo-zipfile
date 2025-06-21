@@ -47,7 +47,7 @@ fn decompress(
     """
     if len(data) == 0:
         raise Error("Cannot decompress empty data")
-    var decompressor = StreamingDecompressor(wbits)
+    var decompressor = Decompress(wbits)
     decompressor.feed_input(data)
 
     var result = List[UInt8]()
@@ -63,8 +63,36 @@ fn decompress(
     return result
 
 
-struct StreamingDecompressor(Copyable, Movable):
+fn decompressobj(wbits: Int = MAX_WBITS) raises -> Decompress:
+    """Return a decompression object.
+
+    This function creates and returns a decompression object that can be used
+    to decompress data incrementally. This matches Python's zlib.decompressobj() API.
+
+    Args:
+        wbits: Window bits parameter controlling format and window size
+               - Positive values (9-15): zlib format with header and trailer
+               - Negative values (-9 to -15): raw deflate format
+               - Values 25-31: gzip format.
+
+    Returns:
+        A Decompress object that can decompress data incrementally.
+
+    Example:
+        ```mojo
+        var decomp = zlib.decompressobj()
+        var result1 = decomp.decompress(data_chunk1)
+        var result2 = decomp.decompress(data_chunk2)
+        var final = decomp.flush()
+        ```
+    """
+    return Decompress(wbits)
+
+
+struct Decompress(Copyable, Movable):
     """A streaming decompressor that can decompress data in chunks to avoid large memory usage.
+
+    This struct matches Python's zlib decompression object API.
     """
 
     var stream: ZStream
@@ -255,6 +283,64 @@ struct StreamingDecompressor(Copyable, Movable):
     fn is_finished(self) -> Bool:
         """Check if decompression is complete."""
         return self.finished and self.output_available == 0
+
+    fn decompress(
+        mut self, data: Span[Byte], max_length: Int = -1
+    ) raises -> List[UInt8]:
+        """Decompress data incrementally.
+
+        This method matches Python's zlib decompression object API.
+
+        Args:
+            data: Compressed data to decompress.
+            max_length: Maximum number of bytes to return. -1 means no limit.
+
+        Returns:
+            Decompressed data as List[UInt8].
+        """
+        if len(data) > 0:
+            self.feed_input(data)
+
+        if max_length == -1:
+            # Return all available data
+            var result = List[UInt8]()
+            while True:
+                var chunk = self.read(65536)  # Read in 64KB chunks
+                if len(chunk) == 0:
+                    break
+                result += chunk
+            return result
+        else:
+            # Return up to max_length bytes
+            return self.read(max_length)
+
+    fn flush(mut self) raises -> List[UInt8]:
+        """Flush any remaining data.
+
+        This method matches Python's zlib decompression object API.
+        Returns any remaining decompressed data.
+
+        Returns:
+            Any remaining decompressed data as List[UInt8].
+        """
+        var result = List[UInt8]()
+        while not self.is_finished():
+            var chunk = self.read(65536)  # Read in 64KB chunks
+            if len(chunk) == 0:
+                break
+            result += chunk
+        return result
+
+    fn copy(self) raises -> Decompress:
+        """Create a copy of the decompressor.
+
+        This method matches Python's zlib decompression object API.
+        Note: This creates a fresh decompressor since copying mid-stream state is complex.
+
+        Returns:
+            A new Decompress object with the same configuration.
+        """
+        return Decompress(self.wbits)
 
     fn __del__(owned self):
         if self.initialized:
