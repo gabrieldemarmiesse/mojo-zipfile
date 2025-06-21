@@ -65,18 +65,37 @@ alias Z_FINISH: ffi.c_int = 4
 alias Z_DEFAULT_COMPRESSION: Int32 = -1
 alias Z_BEST_COMPRESSION: Int32 = 9
 alias Z_BEST_SPEED: Int32 = 1
+alias Z_NO_COMPRESSION: Int32 = 0
 
 # Compression methods
 alias Z_DEFLATED: Int32 = 8
+alias DEFLATED: Int32 = 8  # Python alias for Z_DEFLATED
 
 # Compression strategies
 alias Z_DEFAULT_STRATEGY: Int32 = 0
+alias Z_FILTERED: Int32 = 1
+alias Z_HUFFMAN_ONLY: Int32 = 2
+alias Z_RLE: Int32 = 3
+alias Z_FIXED: Int32 = 4
+
+# Flush modes
+alias Z_PARTIAL_FLUSH: Int32 = 1
+alias Z_FULL_FLUSH: Int32 = 3
+alias Z_BLOCK: Int32 = 5
+alias Z_TREES: Int32 = 6
 
 # Window bits
 alias MAX_WBITS: Int = 15
 
 # Buffer size
 alias DEF_BUF_SIZE: Int = 16384
+
+# Memory level
+alias DEF_MEM_LEVEL: Int32 = 8
+
+# Version strings - these would normally be retrieved from zlib at runtime
+alias ZLIB_VERSION: String = "1.2.11"
+alias ZLIB_RUNTIME_VERSION: String = "1.2.11"
 
 
 fn log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
