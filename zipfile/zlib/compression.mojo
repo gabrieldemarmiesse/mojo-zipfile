@@ -86,6 +86,8 @@ fn decompress(
     Returns:
         The decompressed data.
     """
+    if len(data) == 0:
+        raise Error("Cannot decompress empty data")
     var decompressor = StreamingDecompressor(wbits)
     decompressor.feed_input(data)
 
