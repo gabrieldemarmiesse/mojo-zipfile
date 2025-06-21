@@ -23,8 +23,8 @@ fn adler32(data: Span[UInt8], value: UInt32 = 1) -> UInt32:
     alias BASE = 65521  # Largest prime less than 65536
 
     # Extract the two 16-bit parts from the starting value
-    var a = UInt32(value & 0xFFFF)
-    var b = UInt32((value >> 16) & 0xFFFF)
+    var a = value & 0xFFFF
+    var b = (value >> 16) & 0xFFFF
 
     # Process each byte
     for byte in data:
@@ -32,7 +32,7 @@ fn adler32(data: Span[UInt8], value: UInt32 = 1) -> UInt32:
         b = (b + a) % BASE
 
     # Combine the two parts into the final 32-bit checksum
-    return UInt32((b << 16) | a)
+    return (b << 16) | a
 
 
 fn generate_crc_32_table() -> InlineArray[UInt32, 256]:
