@@ -14,11 +14,9 @@ from .metadata import (
     GeneralPurposeBitFlag,
 )
 import os
-from .zlib import CRC32
-from .zlib.compression import compress
-from .zlib.decompression import decompress, StreamingDecompressor
-from .zlib.constants import MAX_WBITS
+from .zlib._src.decompression import StreamingDecompressor
 from utils import Variant
+from . import zlib
 
 
 def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
@@ -59,7 +57,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
     var compression_method: UInt16
     var start: UInt64
     var expected_crc32: UInt32
-    var crc32: CRC32
+    var crc32: zlib.CRC32
     var _inner_buffer: List[UInt8]  # Only used for ZIP_STORED now
     var _streaming_decompressor: StreamingDecompressor  # For ZIP_DEFLATED
     var _decompressor_initialized: Bool  # Track if decompressor is initialized
@@ -79,9 +77,9 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         self.compression_method = compression_method
         self.start = file[].seek(0, os.SEEK_CUR)
         self.expected_crc32 = expected_crc32
-        self.crc32 = CRC32()
+        self.crc32 = zlib.CRC32()
         self._inner_buffer = List[UInt8]()
-        self._streaming_decompressor = StreamingDecompressor(-MAX_WBITS)
+        self._streaming_decompressor = StreamingDecompressor(-zlib.MAX_WBITS)
         self._decompressor_initialized = False
         self._bytes_read_from_file = 0
 
@@ -205,7 +203,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
 struct ZipFileWriter[origin: Origin[mut=True]]:
     var zipfile: Pointer[ZipFile, origin]
     var local_file_header: LocalFileHeader
-    var crc32: CRC32
+    var crc32: zlib.CRC32
     var compressed_size: UInt64
     var uncompressed_size: UInt64
     var crc32_position: UInt64
@@ -237,7 +235,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             filename=List[UInt8](name.as_bytes()),
             extra_field=List[UInt8](),
         )
-        self.crc32 = CRC32()
+        self.crc32 = zlib.CRC32()
         self.compressed_size = 0
         self.uncompressed_size = 0
         self._header_offset = self.zipfile[].file.seek(0, os.SEEK_CUR)
@@ -283,7 +281,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             and len(self._uncompressed_buffer) > 0
         ):
             # Compress the accumulated data using raw deflate format for ZIP files
-            compressed_data = compress(
+            compressed_data = zlib.compress(
                 self._uncompressed_buffer,
                 level=Int(self._compresslevel),
                 wbits=-15,
