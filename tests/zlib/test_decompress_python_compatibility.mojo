@@ -5,6 +5,7 @@ This module directly compares outputs between Mojo and Python implementations.
 
 import testing
 from zipfile import zlib
+from zipfile.utils_testing import assert_lists_are_equal
 
 
 fn test_decompress_compress_roundtrip() raises:
@@ -55,7 +56,7 @@ fn test_decompress_large_data_roundtrip() raises:
 
     # Repeat the text 100 times
     var base_bytes = base_text.as_bytes()
-    for _ in range(100):
+    for _ in range(10000):
         large_data.extend(base_bytes)
 
     # Compress and decompress
@@ -63,9 +64,11 @@ fn test_decompress_large_data_roundtrip() raises:
     var decompressed = zlib.decompress(compressed)
 
     # Verify
-    testing.assert_equal(len(decompressed), len(large_data))
-    for i in range(len(large_data)):
-        testing.assert_equal(decompressed[i], large_data[i])
+    assert_lists_are_equal(
+        decompressed,
+        large_data,
+        "Decompressed data should match original large data",
+    )
 
 
 fn test_decompress_wbits_compatibility() raises:
@@ -89,34 +92,36 @@ fn test_decompress_wbits_compatibility() raises:
         compressed_raw, wbits=-zlib.MAX_WBITS
     )
 
-    testing.assert_equal(len(decompressed_raw), len(test_bytes))
-    for i in range(len(test_bytes)):
-        testing.assert_equal(decompressed_raw[i], test_bytes[i])
+    assert_lists_are_equal(
+        decompressed_raw,
+        test_bytes,
+        "Decompressed raw data should match original",
+    )
 
 
 fn test_decompress_various_data_types() raises:
     """Test decompress with various data patterns."""
     # Test with repeated patterns
-    var repeated = List[UInt8]()
-    for _ in range(1000):
-        repeated.append(65)  # 'A'
+    var repeated = [UInt8(65) for _ in range(1000)]
 
     var compressed_repeated = zlib.compress(repeated)
     var decompressed_repeated = zlib.decompress(compressed_repeated)
-    testing.assert_equal(len(decompressed_repeated), 1000)
-    for i in range(1000):
-        testing.assert_equal(decompressed_repeated[i], 65)
+    assert_lists_are_equal(
+        decompressed_repeated,
+        repeated,
+        "Decompressed repeated pattern should match original",
+    )
 
     # Test with random-like pattern
-    var random_like = List[UInt8]()
-    for i in range(256):
-        random_like.append(UInt8(i))
+    var random_like = [UInt8(i) for i in range(256)]
 
     var compressed_random = zlib.compress(random_like)
     var decompressed_random = zlib.decompress(compressed_random)
-    testing.assert_equal(len(decompressed_random), 256)
-    for i in range(256):
-        testing.assert_equal(decompressed_random[i], UInt8(i))
+    assert_lists_are_equal(
+        decompressed_random,
+        random_like,
+        "Decompressed random-like data should match original",
+    )
 
 
 fn test_decompress_empty_data_roundtrip() raises:
