@@ -4,7 +4,7 @@ This module tests edge cases and special scenarios that might not be covered
 in the general compatibility tests.
 """
 
-import zipfile.zlib as zlib
+from zipfile import zlib
 from testing import assert_equal, assert_true
 from python import Python
 from zipfile.utils_testing import (

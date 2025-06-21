@@ -77,3 +77,35 @@ alias MAX_WBITS: Int = 15
 
 # Buffer size
 alias DEF_BUF_SIZE: Int = 16384
+
+
+fn log_zlib_result(Z_RES: ffi.c_int, compressing: Bool = True) raises -> None:
+    var prefix: String = ""
+    if not compressing:
+        prefix = "un"
+
+    if Z_RES == Z_OK or Z_RES == Z_STREAM_END:
+        pass
+    elif Z_RES == -4:
+        raise Error(
+            "ERROR " + prefix.upper() + "COMPRESSING: Not enough memory"
+        )
+    elif Z_RES == -5:
+        raise Error(
+            "ERROR "
+            + prefix.upper()
+            + "COMPRESSING: Buffer has not enough memory"
+        )
+    elif Z_RES == -3:
+        raise Error(
+            "ERROR "
+            + prefix.upper()
+            + "COMPRESSING: Data error (bad input format or corrupted)"
+        )
+    else:
+        raise Error(
+            "ERROR "
+            + prefix.upper()
+            + "COMPRESSING: Unhandled exception, got code "
+            + String(Z_RES)
+        )

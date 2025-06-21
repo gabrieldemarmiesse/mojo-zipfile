@@ -15,11 +15,8 @@ from .metadata import (
 )
 import os
 from .zlib import CRC32
-from .zlib.compression import (
-    uncompress,
-    compress,
-    StreamingDecompressor,
-)
+from .zlib.compression import compress
+from .zlib.decompression import decompress, StreamingDecompressor
 from .zlib.constants import MAX_WBITS
 from utils import Variant
 

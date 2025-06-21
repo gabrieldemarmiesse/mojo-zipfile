@@ -1,6 +1,6 @@
 """Tests for zipfile.zlib module functionality."""
 
-import zipfile.zlib as zlib
+from zipfile import zlib
 from testing import assert_equal, assert_true
 
 

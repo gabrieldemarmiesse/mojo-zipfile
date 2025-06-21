@@ -1,6 +1,6 @@
 from sys import ffi
 from .constants import adler32_type, crc32_type, Bytef, uLong
-from .compression import _get_libz_path
+from .zlib_shared_object import get_zlib_dl_handle
 
 
 fn adler32(data: Span[UInt8], value: UInt64 = 1) raises -> UInt64:
@@ -13,7 +13,7 @@ fn adler32(data: Span[UInt8], value: UInt64 = 1) raises -> UInt64:
     Returns:
         An unsigned 32-bit integer representing the Adler-32 checksum.
     """
-    var handle = ffi.DLHandle(_get_libz_path())
+    var handle = get_zlib_dl_handle()
     var adler32_fn = handle.get_function[adler32_type]("adler32")
 
     var result = adler32_fn(uLong(value), data.unsafe_ptr(), UInt32(len(data)))
