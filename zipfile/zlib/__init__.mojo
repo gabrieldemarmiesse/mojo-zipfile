@@ -1,7 +1,7 @@
 from ._src.checksums import (
     adler32,
     crc32,
-    CRC32,
+    crc32_update,
 )
 from ._src.compression import compress
 from ._src.decompression import decompress

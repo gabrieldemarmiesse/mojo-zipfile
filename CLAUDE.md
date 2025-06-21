@@ -13,6 +13,8 @@ This is a Mojo implementation of a ZIP file library that follows the Python zipf
 pixi run test
 ```
 
+**Note**: The `pixi run test` command runs the complete test suite (all 90+ tests). When this command succeeds, it means all functionality is working correctly. There is no need to run individual test files separately unless debugging a specific issue.
+
 ## Architecture
 
 ### Core Components

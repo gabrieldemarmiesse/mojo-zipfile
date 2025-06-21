@@ -38,36 +38,12 @@ fn generate_crc_32_table() -> InlineArray[UInt32, 256]:
 alias CRC32Table = generate_crc_32_table()
 
 
-struct CRC32:
-    """A re-implementation of the CRC-32 algorithm in Mojo.
-
-    It's the same algorithm used in the zipfile module in Python.
-    Reference: https://github.com/python/cpython/blob/main/Modules/binascii.c#L739
-    """
-
-    var _internal_value: UInt32
-
-    @staticmethod
-    fn get_crc_32(data: Span[UInt8]) -> UInt32:
-        crc = CRC32()
-        crc.write(data)
-        return crc.get_final_crc()
-
-    fn __init__(out self, value: UInt32 = 0):
-        self._internal_value = ~value  # CRC-32 starts with 0xFFFFFFFF
-
-    fn write(mut self, data: Span[UInt8]):
-        for byte in data:
-            self._internal_value = CRC32Table[
-                (self._internal_value ^ UInt32(byte)) & UInt32(0xFF)
-            ] ^ (self._internal_value >> 8)
-
-    fn get_final_crc(self) -> UInt32:
-        return ~self._internal_value
-
-
 fn crc32(data: Span[UInt8], value: UInt32 = 0) -> UInt32:
     """Computes a CRC-32 checksum of data.
+
+    This function implements the same CRC-32 algorithm that was previously in the CRC32 struct.
+    It follows the same algorithm used in the zipfile module in Python.
+    Reference: https://github.com/python/cpython/blob/main/Modules/binascii.c#L739
 
     Args:
         data: The data to compute the checksum for (as a Span)
@@ -76,7 +52,38 @@ fn crc32(data: Span[UInt8], value: UInt32 = 0) -> UInt32:
     Returns:
         An unsigned 32-bit integer representing the CRC-32 checksum
     """
-    var crc32_struct = CRC32(value)
-    # Set initial value if provided (inverted because CRC32 starts with 0xFFFFFFFF)
-    crc32_struct.write(data)
-    return crc32_struct.get_final_crc()
+    # Initialize CRC with inverted starting value (CRC-32 starts with 0xFFFFFFFF)
+    var crc = ~value
+
+    # Process each byte
+    for byte in data:
+        crc = CRC32Table[(crc ^ UInt32(byte)) & UInt32(0xFF)] ^ (crc >> 8)
+
+    # Return final CRC (inverted)
+    return ~crc
+
+
+fn crc32_update(data: Span[UInt8], crc: UInt32) -> UInt32:
+    """Update an existing CRC-32 checksum with new data.
+
+    This function allows for incremental CRC-32 calculation, which is useful
+    for processing data in chunks. The intermediate CRC value should be passed
+    as the second argument.
+
+    Args:
+        data: The new data to include in the checksum
+        crc: The current CRC-32 value (from previous calculations)
+
+    Returns:
+        The updated CRC-32 checksum
+    """
+    # Process each byte with the current CRC
+    var current_crc = ~crc  # Invert for processing
+
+    for byte in data:
+        current_crc = CRC32Table[
+            (current_crc ^ UInt32(byte)) & UInt32(0xFF)
+        ] ^ (current_crc >> 8)
+
+    # Return inverted result (but don't finalize yet)
+    return ~current_crc

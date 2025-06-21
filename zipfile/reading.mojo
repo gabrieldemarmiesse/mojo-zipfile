@@ -57,7 +57,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
     var compression_method: UInt16
     var start: UInt64
     var expected_crc32: UInt32
-    var crc32: zlib.CRC32
+    var current_crc32: UInt32  # Current CRC32 value (replaces CRC32 struct)
     var _inner_buffer: List[UInt8]  # Only used for ZIP_STORED now
     var _streaming_decompressor: StreamingDecompressor  # For ZIP_DEFLATED
     var _decompressor_initialized: Bool  # Track if decompressor is initialized
@@ -77,7 +77,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         self.compression_method = compression_method
         self.start = file[].seek(0, os.SEEK_CUR)
         self.expected_crc32 = expected_crc32
-        self.crc32 = zlib.CRC32()
+        self.current_crc32 = 0  # Initialize CRC32 to 0
         self._inner_buffer = List[UInt8]()
         self._streaming_decompressor = StreamingDecompressor(-zlib.MAX_WBITS)
         self._decompressor_initialized = False
@@ -92,13 +92,12 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         return Int(end - self.file[].seek(0, os.SEEK_CUR))
 
     fn _check_crc32(self) raises:
-        computed_crc32 = self.crc32.get_final_crc()
-        if computed_crc32 != self.expected_crc32:
+        if self.current_crc32 != self.expected_crc32:
             raise Error(
                 "CRC32 mismatch, expected: "
                 + String(self.expected_crc32)
                 + ", got: "
-                + String(computed_crc32)
+                + String(self.current_crc32)
             )
 
     fn read(mut self, owned size: Int = -1) raises -> List[UInt8]:
@@ -109,7 +108,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 size = min(size, self._remaining_size())
 
             bytes = self.file[].read_bytes(size)
-            self.crc32.write(bytes)
+            self.current_crc32 = zlib.crc32_update(bytes, self.current_crc32)
 
             if self._remaining_size() == 0:
                 # We are at the end of the file
@@ -153,7 +152,9 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 result += decompressed_data
 
                 # Update CRC32 with decompressed data
-                self.crc32.write(decompressed_data)
+                self.current_crc32 = zlib.crc32_update(
+                    decompressed_data, self.current_crc32
+                )
 
                 # Update bytes needed counter
                 if bytes_needed > 0:
@@ -203,7 +204,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
 struct ZipFileWriter[origin: Origin[mut=True]]:
     var zipfile: Pointer[ZipFile, origin]
     var local_file_header: LocalFileHeader
-    var crc32: zlib.CRC32
+    var current_crc32: UInt32  # Current CRC32 value (replaces CRC32 struct)
     var compressed_size: UInt64
     var uncompressed_size: UInt64
     var crc32_position: UInt64
@@ -235,7 +236,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             filename=List[UInt8](name.as_bytes()),
             extra_field=List[UInt8](),
         )
-        self.crc32 = zlib.CRC32()
+        self.current_crc32 = 0  # Initialize CRC32 to 0
         self.compressed_size = 0
         self.uncompressed_size = 0
         self._header_offset = self.zipfile[].file.seek(0, os.SEEK_CUR)
@@ -252,7 +253,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             )
 
         # Update CRC32 and uncompressed size regardless of compression method
-        self.crc32.write(data)
+        self.current_crc32 = zlib.crc32_update(data, self.current_crc32)
         self.uncompressed_size += UInt64(len(data))
 
         if self.local_file_header.compression_method == ZIP_STORED:
@@ -290,7 +291,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             self.compressed_size = UInt64(len(compressed_data))
 
         # We need to write the crc32 and the compressed size
-        self.local_file_header.crc32 = self.crc32.get_final_crc()
+        self.local_file_header.crc32 = self.current_crc32
         self.local_file_header.compressed_size = UInt32(self.compressed_size)
         self.local_file_header.uncompressed_size = UInt32(
             self.uncompressed_size
