@@ -41,7 +41,7 @@ alias CRC32Table = generate_crc_32_table()
 fn crc32(data: Span[UInt8], value: UInt32 = 0) -> UInt32:
     """Computes a CRC-32 checksum of data.
 
-    This function implements the same CRC-32 algorithm that was previously in the CRC32 struct.
+    This function implements the same CRC-32 algorithm.
     It follows the same algorithm used in the zipfile module in Python.
     Reference: https://github.com/python/cpython/blob/main/Modules/binascii.c#L739
 
@@ -55,35 +55,8 @@ fn crc32(data: Span[UInt8], value: UInt32 = 0) -> UInt32:
     # Initialize CRC with inverted starting value (CRC-32 starts with 0xFFFFFFFF)
     var crc = ~value
 
-    # Process each byte
     for byte in data:
         crc = CRC32Table[(crc ^ UInt32(byte)) & UInt32(0xFF)] ^ (crc >> 8)
 
     # Return final CRC (inverted)
     return ~crc
-
-
-fn crc32_update(data: Span[UInt8], crc: UInt32) -> UInt32:
-    """Update an existing CRC-32 checksum with new data.
-
-    This function allows for incremental CRC-32 calculation, which is useful
-    for processing data in chunks. The intermediate CRC value should be passed
-    as the second argument.
-
-    Args:
-        data: The new data to include in the checksum
-        crc: The current CRC-32 value (from previous calculations)
-
-    Returns:
-        The updated CRC-32 checksum
-    """
-    # Process each byte with the current CRC
-    var current_crc = ~crc  # Invert for processing
-
-    for byte in data:
-        current_crc = CRC32Table[
-            (current_crc ^ UInt32(byte)) & UInt32(0xFF)
-        ] ^ (current_crc >> 8)
-
-    # Return inverted result (but don't finalize yet)
-    return ~current_crc

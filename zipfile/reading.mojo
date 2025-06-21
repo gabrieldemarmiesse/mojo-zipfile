@@ -57,7 +57,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
     var compression_method: UInt16
     var start: UInt64
     var expected_crc32: UInt32
-    var current_crc32: UInt32  # Current CRC32 value (replaces CRC32 struct)
+    var current_crc32: UInt32  # Current CRC32 value
     var _inner_buffer: List[UInt8]  # Only used for ZIP_STORED now
     var _streaming_decompressor: StreamingDecompressor  # For ZIP_DEFLATED
     var _decompressor_initialized: Bool  # Track if decompressor is initialized
@@ -108,7 +108,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 size = min(size, self._remaining_size())
 
             bytes = self.file[].read_bytes(size)
-            self.current_crc32 = zlib.crc32_update(bytes, self.current_crc32)
+            self.current_crc32 = zlib.crc32(bytes, self.current_crc32)
 
             if self._remaining_size() == 0:
                 # We are at the end of the file
@@ -152,7 +152,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 result += decompressed_data
 
                 # Update CRC32 with decompressed data
-                self.current_crc32 = zlib.crc32_update(
+                self.current_crc32 = zlib.crc32(
                     decompressed_data, self.current_crc32
                 )
 
@@ -204,7 +204,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
 struct ZipFileWriter[origin: Origin[mut=True]]:
     var zipfile: Pointer[ZipFile, origin]
     var local_file_header: LocalFileHeader
-    var current_crc32: UInt32  # Current CRC32 value (replaces CRC32 struct)
+    var current_crc32: UInt32
     var compressed_size: UInt64
     var uncompressed_size: UInt64
     var crc32_position: UInt64
@@ -253,7 +253,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             )
 
         # Update CRC32 and uncompressed size regardless of compression method
-        self.current_crc32 = zlib.crc32_update(data, self.current_crc32)
+        self.current_crc32 = zlib.crc32(data, self.current_crc32)
         self.uncompressed_size += UInt64(len(data))
 
         if self.local_file_header.compression_method == ZIP_STORED:
