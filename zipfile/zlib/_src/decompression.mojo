@@ -47,7 +47,7 @@ fn decompress(
     """
     if len(data) == 0:
         raise Error("Cannot decompress empty data")
-    var decompressor = StreamingDecompressor(wbits)
+    var decompressor = Decompress(wbits)
     decompressor.feed_input(data)
 
     var result = List[UInt8]()
@@ -63,7 +63,7 @@ fn decompress(
     return result
 
 
-fn decompressobj(wbits: Int = MAX_WBITS) raises -> StreamingDecompressor:
+fn decompressobj(wbits: Int = MAX_WBITS) raises -> Decompress:
     """Return a decompression object.
 
     This function creates and returns a decompression object that can be used
@@ -76,7 +76,7 @@ fn decompressobj(wbits: Int = MAX_WBITS) raises -> StreamingDecompressor:
                - Values 25-31: gzip format.
 
     Returns:
-        A StreamingDecompressor object that can decompress data incrementally.
+        A Decompress object that can decompress data incrementally.
 
     Example:
         ```mojo
@@ -86,11 +86,13 @@ fn decompressobj(wbits: Int = MAX_WBITS) raises -> StreamingDecompressor:
         var final = decomp.flush()
         ```
     """
-    return StreamingDecompressor(wbits)
+    return Decompress(wbits)
 
 
-struct StreamingDecompressor(Copyable, Movable):
+struct Decompress(Copyable, Movable):
     """A streaming decompressor that can decompress data in chunks to avoid large memory usage.
+
+    This struct matches Python's zlib decompression object API.
     """
 
     var stream: ZStream
@@ -329,16 +331,16 @@ struct StreamingDecompressor(Copyable, Movable):
             result += chunk
         return result
 
-    fn copy(self) raises -> StreamingDecompressor:
+    fn copy(self) raises -> Decompress:
         """Create a copy of the decompressor.
 
         This method matches Python's zlib decompression object API.
         Note: This creates a fresh decompressor since copying mid-stream state is complex.
 
         Returns:
-            A new StreamingDecompressor with the same configuration.
+            A new Decompress object with the same configuration.
         """
-        return StreamingDecompressor(self.wbits)
+        return Decompress(self.wbits)
 
     fn __del__(owned self):
         if self.initialized:
