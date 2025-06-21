@@ -1,10 +1,17 @@
-from sys import ffi
-from .constants import adler32_type, crc32_type, Bytef, uLong
-from .zlib_shared_object import get_zlib_dl_handle
+# Pure Mojo checksum implementations
 
 
-fn adler32(data: Span[UInt8], value: UInt64 = 1) raises -> UInt64:
+fn adler32(data: Span[UInt8], value: UInt32 = 1) -> UInt32:
     """Computes an Adler-32 checksum of data.
+
+    This function implements the Adler-32 algorithm in pure Mojo, avoiding
+    the need for dynamic library dependencies. The algorithm is defined in RFC 1950
+    and is used in the zlib compression library.
+
+    The Adler-32 checksum is computed as:
+    - a = 1 + d1 + d2 + ... + dn (mod 65521)
+    - b = (1 + d1) + (1 + d1 + d2) + ... + (1 + d1 + d2 + ... + dn) (mod 65521)
+    - Adler-32(D) = b * 65536 + a
 
     Args:
         data: The data to compute the checksum for (as a Span).
@@ -13,13 +20,19 @@ fn adler32(data: Span[UInt8], value: UInt64 = 1) raises -> UInt64:
     Returns:
         An unsigned 32-bit integer representing the Adler-32 checksum.
     """
-    var handle = get_zlib_dl_handle()
-    var adler32_fn = handle.get_function[adler32_type]("adler32")
+    alias BASE = 65521  # Largest prime less than 65536
 
-    var result = adler32_fn(uLong(value), data.unsafe_ptr(), UInt32(len(data)))
+    # Extract the two 16-bit parts from the starting value
+    var a = UInt32(value & 0xFFFF)
+    var b = UInt32((value >> 16) & 0xFFFF)
 
-    # Ensure result is treated as unsigned 32-bit
-    return UInt64(result) & 0xFFFFFFFF
+    # Process each byte
+    for byte in data:
+        a = (a + UInt32(byte)) % BASE
+        b = (b + a) % BASE
+
+    # Combine the two parts into the final 32-bit checksum
+    return UInt32((b << 16) | a)
 
 
 fn generate_crc_32_table() -> InlineArray[UInt32, 256]:

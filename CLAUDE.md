@@ -23,7 +23,7 @@ pixi run test
 - **zipfile/reading.mojo**: Core ZIP file reading/writing logic with `ZipFile`, `ZipFileReader`, and `ZipFileWriter` structs
 - **zipfile/metadata.mojo**: ZIP file format structures (LocalFileHeader, CentralDirectoryFileHeader, etc.)
 - **zipfile/compression.mojo**: Deflate decompression using system zlib (currently read-only)
-- **zipfile/crc_32.mojo**: CRC-32 implementation for data integrity verification
+- **zipfile/zlib/_src/checksums.mojo**: Pure Mojo implementations of CRC-32 and Adler-32 checksums for data integrity verification
 - **zipfile/read_write_values.mojo**: Binary data serialization utilities
 - **zipfile/utils.mojo**: Utility functions like list comparison
 
@@ -32,7 +32,8 @@ pixi run test
 1. **Python API Compatibility**: Mirrors Python's zipfile module interface (`ZipFile`, `open()`, `writestr()`, etc.)
 2. **Streaming Support**: `ZipFileReader` and `ZipFileWriter` provide progressive read/write capabilities
 3. **Memory Safety**: Uses Mojo's ownership system with proper resource cleanup via `__del__` and context managers
-4. **FFI Integration**: Leverages system zlib via foreign function interface for deflate compression
+4. **Pure Mojo Checksums**: CRC-32 and Adler-32 implementations are written in pure Mojo, avoiding dynamic library dependencies
+5. **FFI Integration**: Leverages system zlib via foreign function interface for deflate compression only
 
 ### Compression Support
 
@@ -65,6 +66,7 @@ Tests use Python's zipfile module to create reference ZIP files and verify compa
 
 - Negative file seek offsets are broken in Mojo, affecting some ZIP format operations
 - The library assumes no ZIP file comments for simplicity (can be extended later)
+- CRC-32 and Adler-32 are implemented in pure Mojo without external dependencies
 - CRC-32 verification is mandatory and automatically performed during read operations
 - File writing uses progressive approach with automatic CRC/size backfilling
 
