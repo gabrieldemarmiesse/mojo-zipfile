@@ -14,9 +14,8 @@ from .metadata import (
     GeneralPurposeBitFlag,
 )
 import os
-from .zlib._src.decompression import Decompress
 from utils import Variant
-from . import zlib
+import zlib
 
 
 def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
@@ -59,7 +58,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
     var expected_crc32: UInt32
     var current_crc32: UInt32  # Current CRC32 value
     var _inner_buffer: List[UInt8]  # Only used for ZIP_STORED now
-    var _streaming_decompressor: Decompress  # For ZIP_DEFLATED
+    var _streaming_decompressor: zlib.Decompress  # For ZIP_DEFLATED
     var _decompressor_initialized: Bool  # Track if decompressor is initialized
     var _bytes_read_from_file: UInt64  # Track how much compressed data we've read
 
@@ -79,7 +78,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         self.expected_crc32 = expected_crc32
         self.current_crc32 = 0  # Initialize CRC32 to 0
         self._inner_buffer = List[UInt8]()
-        self._streaming_decompressor = Decompress(-zlib.MAX_WBITS)
+        self._streaming_decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
         self._decompressor_initialized = False
         self._bytes_read_from_file = 0
 

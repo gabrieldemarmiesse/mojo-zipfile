@@ -4,7 +4,7 @@ import zipfile
 from testing import assert_equal, assert_true, assert_raises
 from python import Python
 from pathlib import Path
-from zipfile import zlib
+import zlib
 
 
 def test_read_simple_hello_world_deflate():
