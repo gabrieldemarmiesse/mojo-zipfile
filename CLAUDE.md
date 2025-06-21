@@ -99,7 +99,7 @@ You can call Python functions directly from Mojo test files to ensure compatibil
 
 ```mojo
 from python import Python
-from zipfile.utils_testing import to_py_bytes
+from zipfile.utils_testing import to_py_bytes, assert_lists_are_equal, to_mojo_bytes
 
 def test_function_python_compatibility():
     """Test that our function matches Python's behavior."""
@@ -117,14 +117,10 @@ def test_function_python_compatibility():
     py_result = py_zlib.function_name(py_data_bytes)
     
     # Convert Python result to Mojo for comparison
-    py_result_list = List[Byte]()
-    for i in range(len(py_result)):
-        py_result_list.append(UInt8(Int(py_result[i])))
+    py_result_list = to_mojo_bytes(py_result)
     
     # Compare results
-    assert_equal(len(mojo_result), len(py_result_list))
-    for i in range(len(mojo_result)):
-        assert_equal(mojo_result[i], py_result_list[i])
+    assert_lists_are_equal(mojo_result, py_result_list)
 ```
 
 Use `to_py_bytes()` utility function from `zipfile.utils_testing` to convert Mojo bytes to Python bytes objects.
