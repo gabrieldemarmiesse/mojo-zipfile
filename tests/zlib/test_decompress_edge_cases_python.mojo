@@ -42,42 +42,16 @@ def test_decompress_minimal_window_size_python_compatibility():
 
 def test_decompress_very_small_buffer_python_compatibility():
     """Test decompress with very small buffer size."""
-    py_zlib = Python.import_module("zlib")
-
     test_data = (
         "Testing very small buffer size handling in decompress function."
         .as_bytes()
     )
 
-    # Compress with Python
-    py_data_bytes = to_py_bytes(test_data)
-    py_compressed = py_zlib.compress(py_data_bytes)
-
-    # Convert Python compressed result to Mojo bytes
-    mojo_compressed = List[Byte]()
-    for i in range(len(py_compressed)):
-        mojo_compressed.append(UInt8(Int(py_compressed[i])))
-
-    # Decompress with very small buffer (should still work)
-    mojo_result = zlib.decompress(mojo_compressed, bufsize=1)
-    py_result = py_zlib.decompress(py_compressed, bufsize=1)
-
-    # Convert Python result to Mojo for comparison
-    py_result_list = List[Byte]()
-    for i in range(len(py_result)):
-        py_result_list.append(UInt8(Int(py_result[i])))
-
-    assert_equal(
-        len(mojo_result),
-        len(py_result_list),
-        "very small buffer decompressed data length should match Python",
+    test_mojo_vs_python_decompress(
+        test_data,
+        bufsize=1,
+        message="very small buffer decompressed data should match Python",
     )
-    for i in range(len(mojo_result)):
-        assert_equal(
-            mojo_result[i],
-            py_result_list[i],
-            "very small buffer decompressed data bytes should match Python",
-        )
 
 
 def test_decompress_highly_repetitive_data_python_compatibility():
@@ -88,7 +62,7 @@ def test_decompress_highly_repetitive_data_python_compatibility():
     # Create highly repetitive data (should compress to very small size)
     repetitive_data = ("X" * 10000).as_bytes()
 
-    # Compress with Python
+    # Compress with Python to verify compression ratio
     py_data_bytes = to_py_bytes(repetitive_data)
     py_compressed = py_zlib.compress(py_data_bytes)
 
@@ -99,74 +73,31 @@ def test_decompress_highly_repetitive_data_python_compatibility():
         "highly repetitive data should compress very well",
     )
 
-    # Convert Python compressed result to Mojo bytes
-    mojo_compressed = List[Byte]()
-    for i in range(len(py_compressed)):
-        mojo_compressed.append(UInt8(Int(py_compressed[i])))
+    # Use utility function for decompression testing
+    test_mojo_vs_python_decompress(
+        repetitive_data,
+        message="highly repetitive decompressed data should match Python",
+    )
 
-    # Decompress with both implementations
+    # Additional check: verify decompressed data has correct length
+    mojo_compressed = to_mojo_bytes(py_compressed)
     mojo_result = zlib.decompress(mojo_compressed)
-    py_result = py_zlib.decompress(py_compressed)
-
-    # Convert Python result to Mojo for comparison
-    py_result_list = List[Byte]()
-    for i in range(len(py_result)):
-        py_result_list.append(UInt8(Int(py_result[i])))
-
-    assert_equal(
-        len(mojo_result),
-        len(py_result_list),
-        "highly repetitive decompressed data length should match Python",
+    assert_lists_are_equal(
+        mojo_result,
+        repetitive_data,
+        "Decompressed data length should match original repetitive data",
     )
-    assert_equal(
-        len(mojo_result),
-        10000,
-        "decompressed data should have original length",
-    )
-    for i in range(len(mojo_result)):
-        assert_equal(
-            mojo_result[i],
-            py_result_list[i],
-            "highly repetitive decompressed data bytes should match Python",
-        )
 
 
 def test_decompress_unicode_text_python_compatibility():
     """Test decompress with Unicode text data."""
-    py_zlib = Python.import_module("zlib")
-
     # Unicode text (will be encoded as UTF-8 bytes)
     unicode_text = "Hello, 世界! Héllo, мир! 🌍🚀✨".as_bytes()
 
-    # Compress with Python
-    py_data_bytes = to_py_bytes(unicode_text)
-    py_compressed = py_zlib.compress(py_data_bytes)
-
-    # Convert Python compressed result to Mojo bytes
-    mojo_compressed = List[Byte]()
-    for i in range(len(py_compressed)):
-        mojo_compressed.append(UInt8(Int(py_compressed[i])))
-
-    # Decompress with both implementations
-    mojo_result = zlib.decompress(mojo_compressed)
-    py_result = py_zlib.decompress(py_compressed)
-
-    # Convert Python result to Mojo for comparison
-    py_result_list = List[Byte]()
-    for i in range(len(py_result)):
-        py_result_list.append(UInt8(Int(py_result[i])))
-
-    assert_equal(
-        len(mojo_result),
-        len(py_result_list),
-        "Unicode decompressed data length should match Python",
+    test_mojo_vs_python_decompress(
+        unicode_text,
+        message="Unicode decompressed data should match Python",
     )
-    for i in range(len(mojo_result)):
-        assert_equal(
-            mojo_result[i],
-            py_result_list[i],
-            "Unicode decompressed data bytes should match Python",
-        )
 
 
 def main():
