@@ -64,7 +64,7 @@ def test_identical_analysis():
     assert_equal(infolist[3].filename, "qux.txt")
     # check crc computation
     for zipinfo in infolist:
-        file_like = open_zip_mojo.open(zipinfo, "r")
+        file_like = open_zip_mojo.open_to_read(zipinfo, "r")
         content = file_like.read()
 
     open_zip_mojo.close()
@@ -78,11 +78,11 @@ def test_read_content():
 
     open_zip_mojo = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo.infolist()), 1)
-    hello_file = open_zip_mojo.open("hello.txt", "r")
+    hello_file = open_zip_mojo.open_to_read("hello.txt", "r")
     content = hello_file.read()
     assert_equal(String(bytes=content), "hello world!")
 
-    hello_file = open_zip_mojo.open("hello.txt", "r")
+    hello_file = open_zip_mojo.open_to_read("hello.txt", "r")
     content = hello_file.read(5)
     assert_equal(String(bytes=content), "hello")
     content = hello_file.read(5)

@@ -28,7 +28,7 @@ def test_streaming_large_file_small_chunks():
 
     # Test reading in very small chunks (much smaller than buffer sizes)
     zip_read = zipfile.ZipFile(file_path, "r")
-    file_reader = zip_read.open("large.txt", "r")
+    file_reader = zip_read.open_to_read("large.txt", "r")
 
     # Read in 1KB chunks to force multiple buffer refills
     chunk_size = 1024
@@ -84,7 +84,7 @@ def test_streaming_large_file_large_chunks():
 
     # Test reading in chunks larger than internal buffers (> 64KB)
     zip_read = zipfile.ZipFile(file_path, "r")
-    file_reader = zip_read.open("huge.txt", "r")
+    file_reader = zip_read.open_to_read("huge.txt", "r")
 
     # Read in 100KB chunks - larger than the 64KB output buffer
     chunk_size = 100 * 1024  # 100KB
@@ -151,7 +151,7 @@ def test_streaming_entire_large_file():
 
     # Test reading entire file at once (size=-1)
     zip_read = zipfile.ZipFile(file_path, "r")
-    file_reader = zip_read.open("massive.txt", "r")
+    file_reader = zip_read.open_to_read("massive.txt", "r")
 
     # Read entire file in one call
     all_data = file_reader.read(-1)
@@ -192,7 +192,7 @@ def test_mixed_read_patterns_large_file():
 
     # Test mixed reading patterns
     zip_read = zipfile.ZipFile(file_path, "r")
-    file_reader = zip_read.open("mixed.txt", "r")
+    file_reader = zip_read.open_to_read("mixed.txt", "r")
 
     reconstructed_data = List[UInt8]()
 
@@ -254,7 +254,7 @@ def test_streaming_multiple_large_files():
     # Read each file separately to avoid potential state sharing issues
 
     # Read file1 in small chunks
-    reader1 = zip_read.open("file1.txt", "r")
+    reader1 = zip_read.open_to_read("file1.txt", "r")
     reconstructed1 = List[UInt8]()
     while True:
         chunk = reader1.read(512)
@@ -270,7 +270,7 @@ def test_streaming_multiple_large_files():
             assert_true(False, "File1 data mismatch at byte " + String(i))
 
     # Read file2 all at once
-    reader2 = zip_read.open("file2.txt", "r")
+    reader2 = zip_read.open_to_read("file2.txt", "r")
     reconstructed2 = reader2.read(-1)
 
     # Verify file2 - check size first
@@ -281,7 +281,7 @@ def test_streaming_multiple_large_files():
             assert_true(False, "File2 data mismatch at byte " + String(i))
 
     # Read file3 in medium chunks
-    reader3 = zip_read.open("file3.txt", "r")
+    reader3 = zip_read.open_to_read("file3.txt", "r")
     reconstructed3 = List[UInt8]()
     while True:
         chunk = reader3.read(1024)

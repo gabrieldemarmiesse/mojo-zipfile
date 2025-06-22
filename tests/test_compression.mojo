@@ -15,7 +15,7 @@ def test_read_simple_hello_world_deflate():
 
     open_zip_mojo = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo.infolist()), 1)
-    hello_file = open_zip_mojo.open("hello.txt", "r")
+    hello_file = open_zip_mojo.open_to_read("hello.txt", "r")
     content = hello_file.read()
     assert_equal(String(bytes=content), "hello world!")
 
@@ -34,7 +34,7 @@ def test_write_simple_hello_world_deflate():
     # Also verify we can read it back with Mojo
     open_zip_mojo_read = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo_read.infolist()), 1)
-    hello_file = open_zip_mojo_read.open("hello.txt", "r")
+    hello_file = open_zip_mojo_read.open_to_read("hello.txt", "r")
     content = hello_file.read()
     assert_equal(String(bytes=content), "hello world!")
     open_zip_mojo_read.close()
@@ -60,7 +60,7 @@ def test_write_simple_hello_world_deflate_progressive():
     # Also verify we can read it back with Mojo
     open_zip_mojo_read = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo_read.infolist()), 1)
-    hello_file = open_zip_mojo_read.open("hello.txt", "r")
+    hello_file = open_zip_mojo_read.open_to_read("hello.txt", "r")
     content = hello_file.read()
     assert_equal(String(bytes=content), "hello world!")
     open_zip_mojo_read.close()
@@ -96,7 +96,7 @@ def test_deflate_compression_ratio():
 
     # Verify content is the same when reading back
     zip_read = zipfile.ZipFile(deflated_file, "r")
-    file_reader = zip_read.open("large.txt", "r")
+    file_reader = zip_read.open_to_read("large.txt", "r")
     content = file_reader.read()
     assert_equal(String(bytes=content), large_data)
     zip_read.close()
@@ -123,7 +123,7 @@ def test_compression_levels():
 
         # Verify content can be read back correctly
         zip_read = zipfile.ZipFile(file_path, "r")
-        file_reader = zip_read.open("test.txt", "r")
+        file_reader = zip_read.open_to_read("test.txt", "r")
         content = file_reader.read()
         assert_equal(String(bytes=content), test_data)
         zip_read.close()
@@ -179,13 +179,13 @@ def test_compression_level_progressive_write():
     )
 
     zip_read1 = zipfile.ZipFile(file_path_level1, "r")
-    file_reader1 = zip_read1.open("progressive.txt", "r")
+    file_reader1 = zip_read1.open_to_read("progressive.txt", "r")
     content1 = file_reader1.read()
     assert_equal(String(bytes=content1), expected_content)
     zip_read1.close()
 
     zip_read9 = zipfile.ZipFile(file_path_level9, "r")
-    file_reader9 = zip_read9.open("progressive.txt", "r")
+    file_reader9 = zip_read9.open_to_read("progressive.txt", "r")
     content9 = file_reader9.read()
     assert_equal(String(bytes=content9), expected_content)
     zip_read9.close()
@@ -250,7 +250,7 @@ def test_compression_level_constants():
         file_path_default,
     ]:
         zip_read = zipfile.ZipFile(file_path, "r")
-        file_reader = zip_read.open("test.txt", "r")
+        file_reader = zip_read.open_to_read("test.txt", "r")
         content = file_reader.read()
         assert_equal(String(bytes=content), test_data)
         zip_read.close()

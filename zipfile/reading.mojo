@@ -404,7 +404,7 @@ struct ZipFile:
             _ = self.end_of_central_directory.write_to_file(self.file)
         self.file.close()
 
-    fn open(
+    fn open_to_read(
         mut self, name: ZipInfo, mode: String
     ) raises -> ZipFileReader[__origin_of(self.file)]:
         if mode != "r":
@@ -429,10 +429,10 @@ struct ZipFile:
             name._crc32.value(),
         )
 
-    fn open(
+    fn open_to_read(
         mut self, name: String, mode: String
     ) raises -> ZipFileReader[__origin_of(self.file)]:
-        return self.open(self.getinfo(name), mode)
+        return self.open_to_read(self.getinfo(name), mode)
 
     fn open_to_write(
         mut self,
@@ -471,7 +471,7 @@ struct ZipFile:
 
     fn read(mut self, name: String) raises -> List[UInt8]:
         """Read and return the bytes of a file in the archive."""
-        file_reader = self.open(name, "r")
+        file_reader = self.open_to_read(name, "r")
         return file_reader.read()
 
     fn getinfo(mut self, name: String) raises -> ZipInfo:
