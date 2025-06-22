@@ -1,5 +1,3 @@
-"""Streaming functionality tests for zipfile module."""
-
 import zipfile
 from testing import assert_equal, assert_true, assert_raises
 from python import Python
@@ -297,3 +295,16 @@ def test_streaming_multiple_large_files():
             assert_true(False, "File3 data mismatch at byte " + String(i))
 
     zip_read.close()
+
+
+def test_read_simple_hello_world_deflate():
+    file_path = "/tmp/hello7276.zip"
+    Python.add_to_path("./tests")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.create_hello_world_zip_with_deflate(file_path)
+
+    open_zip_mojo = zipfile.ZipFile(file_path, "r")
+    assert_equal(len(open_zip_mojo.infolist()), 1)
+    hello_file = open_zip_mojo.open_to_read("hello.txt", "r")
+    content = hello_file.read()
+    assert_equal(String(bytes=content), "hello world!")
