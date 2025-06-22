@@ -1,7 +1,6 @@
 import zipfile
 from testing import assert_equal, assert_true, assert_raises
 from python import Python
-from pathlib import Path
 
 
 def test_streaming_large_file_small_chunks():

@@ -1,3 +1,22 @@
+from os import PathLike
+from builtin.file import FileHandle
+import os
+from .utils import _lists_are_equal
+from .metadata import (
+    LocalFileHeader,
+    CentralDirectoryFileHeader,
+    EndOfCentralDirectoryRecord,
+    ZIP_STORED,
+    ZIP_DEFLATED,
+    GeneralPurposeBitFlag,
+)
+from .read_write_values import write_zip_value
+from .zipfile_reader import ZipFileReader
+from .zipfile_writer import ZipFileWriter
+from .zipinfo import ZipInfo
+import zlib
+
+
 def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
     with open(filename, "rb") as fp:
         # For now we only check the first 4 bytes, it should be good enough

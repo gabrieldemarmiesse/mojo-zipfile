@@ -1,5 +1,4 @@
 from python import PythonObject, Python
-from zipfile import zlib
 
 
 def to_py_bytes(data: String) -> PythonObject:

@@ -1,3 +1,7 @@
+from .metadata import CentralDirectoryFileHeader
+from collections import Optional
+
+
 struct ZipInfo(Copyable, Movable):
     var filename: String
     var _start_of_header: UInt64

@@ -1,3 +1,9 @@
+from builtin.file import FileHandle
+import os
+from .metadata import ZIP_STORED, ZIP_DEFLATED
+import zlib
+
+
 struct ZipFileReader[origin: Origin[mut=True]]:
     var file: Pointer[FileHandle, origin]
     var compressed_size: UInt64

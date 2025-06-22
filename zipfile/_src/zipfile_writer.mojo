@@ -1,3 +1,17 @@
+from os import abort
+from builtin.file import FileHandle
+import os
+from .metadata import (
+    LocalFileHeader,
+    CentralDirectoryFileHeader,
+    GeneralPurposeBitFlag,
+    ZIP_STORED,
+    ZIP_DEFLATED,
+)
+from .read_write_values import write_zip_value
+import zlib
+
+
 struct ZipFileWriter[origin: Origin[mut=True]]:
     var zipfile: Pointer[ZipFile, origin]
     var local_file_header: LocalFileHeader

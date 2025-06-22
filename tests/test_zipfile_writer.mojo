@@ -1,7 +1,6 @@
 import zipfile
 from testing import assert_equal, assert_true, assert_raises
 from python import Python
-from pathlib import Path
 
 
 def test_write_simple_hello_world_progressive_with_close():
