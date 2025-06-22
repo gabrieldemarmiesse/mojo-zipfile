@@ -13,23 +13,26 @@ This is a Mojo implementation of a ZIP file library that follows the Python zipf
 pixi run test
 ```
 
-**Note**: The `pixi run test` command runs the complete test suite (all 94+ tests). When this command succeeds, it means all functionality is working correctly. There is no need to run individual test files separately unless debugging a specific issue.
+**Note**: The `pixi run test` command runs the complete test suite (all 20 tests). When this command succeeds, it means all functionality is working correctly. There is no need to run individual test files separately unless debugging a specific issue.
 
 ## Architecture
 
 ### Core Components
 
 - **zipfile/__init__.mojo**: Main entry point exposing `is_zipfile()` and `ZipFile` class
-- **zipfile/reading.mojo**: Core ZIP file reading/writing logic with `ZipFile`, `ZipFileReader`, and `ZipFileWriter` structs
-- **zipfile/metadata.mojo**: ZIP file format structures (LocalFileHeader, CentralDirectoryFileHeader, etc.)
-- **zipfile/compression.mojo**: Deflate decompression using system zlib (currently read-only)
-- **zipfile/zlib/_src/checksums.mojo**: Pure Mojo implementations of CRC-32 and Adler-32 checksums for data integrity verification
-- **zipfile/read_write_values.mojo**: Binary data serialization utilities
-- **zipfile/utils.mojo**: Utility functions like list comparison
+- **zipfile/_src/zipfile.mojo**: Core ZIP file reading/writing logic with `is_zipfile()` function and `ZipFile` struct
+- **zipfile/_src/zipfile_reader.mojo**: `ZipFileReader` struct for progressive reading of ZIP file entries
+- **zipfile/_src/zipfile_writer.mojo**: `ZipFileWriter` struct for progressive writing of ZIP file entries
+- **zipfile/_src/zipinfo.mojo**: `ZipInfo` struct containing metadata about ZIP file entries
+- **zipfile/_src/metadata.mojo**: ZIP file format structures (LocalFileHeader, CentralDirectoryFileHeader, etc.)
+- **zipfile/_src/read_write_values.mojo**: Binary data serialization utilities
+- **zipfile/_src/utils.mojo**: Utility functions like list comparison
+- **zipfile/_src/utils_testing.mojo**: Testing utilities for Python interoperability
+- **zlib/_src/checksums.mojo**: Pure Mojo implementations of CRC-32 and Adler-32 checksums for data integrity verification
 
 ### Key Design Patterns
 
-1. **Python API Compatibility**: Mirrors Python's zipfile module interface (`ZipFile`, `open()`, `writestr()`, etc.)
+1. **Python API Compatibility**: Mirrors Python's zipfile module interface (`ZipFile`, `open_to_read()`, `writestr()`, etc.)
 2. **Streaming Support**: `ZipFileReader` and `ZipFileWriter` provide progressive read/write capabilities
 3. **Memory Safety**: Uses Mojo's ownership system with proper resource cleanup via `__del__` and context managers
 4. **Pure Mojo Checksums**: CRC-32 and Adler-32 implementations are written in pure Mojo, avoiding dynamic library dependencies
@@ -60,7 +63,15 @@ writer = zip_file.open_to_write("file.txt", "w", zipfile.ZIP_DEFLATED, compressl
 
 ### Testing Strategy
 
-Tests use Python's zipfile module to create reference ZIP files and verify compatibility. The `tests_helper.py` provides utilities for creating test ZIP files with different compression methods.
+Tests use Python's zipfile module to create reference ZIP files and verify compatibility. The current test structure includes:
+
+- **tests/test_zipfile.mojo**: Basic ZIP file operations (writing, reading, compression)
+- **tests/test_zipfile_reader.mojo**: Streaming and advanced reading functionality
+- **tests/test_zipfile_writer.mojo**: Progressive writing and compression level testing
+- **tests/test_zipinfo.mojo**: ZIP file metadata and directory structure analysis
+- **tests/tests_helper.py**: Python utilities for creating test ZIP files with different compression methods
+
+The test suite validates compatibility with Python's zipfile module and ensures all compression methods work correctly.
 
 ### Streaming Compression/Decompression API
 
@@ -84,8 +95,32 @@ var final = comp.flush()  # Finalize and get remaining compressed data
 var copy = comp.copy()  # Create a copy of the compressor
 ```
 
+## API Changes and Current Structure
+
+### Recent API Changes:
+- **Method Renaming**: The `ZipFile.open()` methods have been renamed to `ZipFile.open_to_read()` for better clarity and to avoid confusion with the built-in `open()` function
+- **Modular Structure**: The codebase has been reorganized into a modular structure with separate files for different components in `zipfile/_src/`
+
+### Current API:
+```mojo
+# Reading files from ZIP
+zip_file = zipfile.ZipFile("archive.zip", "r")
+file_reader = zip_file.open_to_read("file.txt", "r")  # Note: open_to_read, not open
+content = file_reader.read()
+
+# Writing files to ZIP  
+zip_file = zipfile.ZipFile("archive.zip", "w")
+file_writer = zip_file.open_to_write("file.txt", "w")  # This remains the same
+file_writer.write(data)
+file_writer.close()
+
+# Alternative writing method
+zip_file.writestr("file.txt", "content")  # This remains the same
+```
+
 ## Important Implementation Notes
 
+- **API Compatibility**: While the library follows Python's zipfile API, the `open()` method has been renamed to `open_to_read()` for reading operations
 - Negative file seek offsets are broken in Mojo, affecting some ZIP format operations
 - The library assumes no ZIP file comments for simplicity (can be extended later)
 - CRC-32 and Adler-32 are implemented in pure Mojo without external dependencies
@@ -98,7 +133,7 @@ Since the Mojo language is pretty new, the Mojo repository can be found in `modu
 
 Do not use print statements in the tests. They won't be seen if the tests are passing correctly.
 
-The reference implementation in python can be found in `zipfile/reference.py`.
+The reference implementation in python can be found in `zipfile/reference.py` (if present).
 List is auto-cast to Span when calling a function. So it's not necessary to implement a function for both Span and List. Just implementing it for Span is enough.
 
 In docstrings, sentences to describle a function or an argument should always end with a "."
@@ -126,7 +161,7 @@ You can call Python functions directly from Mojo test files to ensure compatibil
 
 ```mojo
 from python import Python
-from zipfile.utils_testing import to_py_bytes, assert_lists_are_equal, to_mojo_bytes
+from zipfile._src.utils_testing import to_py_bytes, assert_lists_are_equal, to_mojo_bytes
 
 def test_function_python_compatibility():
     """Test that our function matches Python's behavior."""
@@ -150,9 +185,9 @@ def test_function_python_compatibility():
     assert_lists_are_equal(mojo_result, py_result_list)
 ```
 
-Use `to_py_bytes()` utility function from `zipfile.utils_testing` to convert Mojo bytes to Python bytes objects.
+Use `to_py_bytes()` utility function from `zipfile._src.utils_testing` to convert Mojo bytes to Python bytes objects.
 
-## Additional Utility Functions in `utils_testing.mojo`
+## Additional Utility Functions in `zipfile/_src/utils_testing.mojo`
 
 **Data Conversion:**
 - `to_py_bytes(data: Span[Byte]) -> PythonObject` - Convert Mojo bytes to Python bytes
