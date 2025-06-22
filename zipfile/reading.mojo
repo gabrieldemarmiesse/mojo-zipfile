@@ -56,10 +56,9 @@ struct ZipFileReader[origin: Origin[mut=True]]:
     var compression_method: UInt16
     var start: UInt64
     var expected_crc32: UInt32
-    var current_crc32: UInt32  # Current CRC32 value
+    var current_crc32: UInt32
     var _inner_buffer: List[UInt8]  # Only used for ZIP_STORED now
     var _streaming_decompressor: zlib.Decompress  # For ZIP_DEFLATED
-    var _decompressor_initialized: Bool  # Track if decompressor is initialized
     var _bytes_read_from_file: UInt64  # Track how much compressed data we've read
 
     fn __init__(
@@ -79,7 +78,6 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         self.current_crc32 = 0  # Initialize CRC32 to 0
         self._inner_buffer = List[UInt8]()
         self._streaming_decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
-        self._decompressor_initialized = False
         self._bytes_read_from_file = 0
 
     fn _is_at_start(self) raises -> Bool:
@@ -123,11 +121,6 @@ struct ZipFileReader[origin: Origin[mut=True]]:
 
     fn _read_deflated(mut self, size: Int) raises -> List[UInt8]:
         """Read deflated data using streaming decompression."""
-        # Initialize streaming decompressor if needed
-        if not self._decompressor_initialized:
-            self._streaming_decompressor.initialize()
-            self._decompressor_initialized = True
-
         # Read compressed data in chunks and feed to decompressor
         # Use 32KB chunks to balance I/O and memory usage
         alias CHUNK_SIZE = 32768
