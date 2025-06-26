@@ -1,8 +1,8 @@
-[project]
+[workspace]
 name = "mojo-zipfile"
 description = "A Mojo implementation of the Python zipfile library enabling seamless migration from Python code."
 authors = ["gabrieldemarmiesse <gabrieldemarmiesse@gmail.com>"]
-channels = ["conda-forge", "https://conda.modular.com/max-nightly", "https://repo.prefix.dev/mojo-community"]
+channels = ["conda-forge", "https://conda.modular.com/max-nightly", "https://repo.prefix.dev/mojo-community", "https://prefix.dev/pixi-build-backends"]
 platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
 version = "0.1.0"
 license = "MIT"
@@ -31,6 +31,9 @@ backend = { name = "pixi-build-rattler-build", version = "*" }
 [feature.util.dependencies]
 typer = ">=0.16.0,<0.17"
 pyyaml = ">=6.0.2,<7"
+
+[feature.util.tasks]
+publish = "python scripts/publish.py build-and-publish"
 
 [environments]
 default = { solve-group = "default" }

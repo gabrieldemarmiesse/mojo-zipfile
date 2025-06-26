@@ -22,11 +22,6 @@ fn to_mojo_bytes(some_data: PythonObject) raises -> List[Byte]:
     return result
 
 
-fn to_mojo_string(some_data: PythonObject) raises -> String:
-    mojo_bytes = to_mojo_bytes(some_data)
-    return String.from_bytes(mojo_bytes)
-
-
 fn assert_lists_are_equal(
     list1: Span[Byte],
     list2: Span[Byte],
