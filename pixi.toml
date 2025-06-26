@@ -1,14 +1,37 @@
 [project]
+name = "mojo-zipfile"
+description = "A Mojo implementation of the Python zipfile library enabling seamless migration from Python code."
 authors = ["gabrieldemarmiesse <gabrieldemarmiesse@gmail.com>"]
 channels = ["conda-forge", "https://conda.modular.com/max-nightly", "https://repo.prefix.dev/mojo-community"]
-name = "zipfile"
-platforms = ["linux-64"]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
 version = "0.1.0"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+homepage = "https://github.com/gabrieldemarmiesse/mojo-zipfile"
+repository = "https://github.com/gabrieldemarmiesse/mojo-zipfile"
+preview = ["pixi-build"]
 
 [tasks]
 test = "mojo test -I ./src tests/"
 format = "mojo format"
+build-and-publish = { cmd = "python scripts/publish.py build-and-publish" }
 
 [dependencies]
 max = ">=25.3.0.dev2025042605"
-mojo-zlib = ">=0.1.5,<0.2"
+mojo-zlib = ">=0.1.5,<1.0.0"
+
+[package]
+name = "mojo-zipfile"
+version = "0.1.0"
+
+[package.build]
+backend = { name = "pixi-build-rattler-build", version = "*" }
+
+[feature.util.dependencies]
+typer = ">=0.16.0,<0.17"
+pyyaml = ">=6.0.2,<7"
+
+[environments]
+default = { solve-group = "default" }
+util = { features = ["util"], solve-group = "default" }
