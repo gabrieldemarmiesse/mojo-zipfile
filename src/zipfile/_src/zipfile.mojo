@@ -93,22 +93,43 @@ struct ZipFile:
 
     fn close(mut self) raises:
         if self.mode == "w":
-            self.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk = len(
-                self.central_directory_files_headers
+            num_entries = len(self.central_directory_files_headers)
+            if num_entries > 0xFFFF:
+                raise Error(
+                    "Number of entries exceeds 65535 limit - ZIP64 format not"
+                    " supported yet"
+                )
+            self.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk = UInt16(
+                num_entries
             )
-            self.end_of_central_directory.total_number_of_entries_in_the_central_directory = len(
-                self.central_directory_files_headers
+            self.end_of_central_directory.total_number_of_entries_in_the_central_directory = UInt16(
+                num_entries
             )
+            current_pos = self.file.seek(0, os.SEEK_CUR)
+            if current_pos > 0xFFFFFFFF:
+                raise Error(
+                    "Central directory offset exceeds 4GB limit - ZIP64 format"
+                    " not supported yet"
+                )
             self.end_of_central_directory.offset_of_starting_disk_number = (
-                UInt32(self.file.seek(0, os.SEEK_CUR))
+                UInt64(current_pos)
             )
 
             for header in self.central_directory_files_headers:
                 _ = header.write_to_file(self.file)
 
-            self.end_of_central_directory.size_of_the_central_directory = UInt32(
-                UInt32(self.file.seek(0, os.SEEK_CUR))
+            current_pos = self.file.seek(0, os.SEEK_CUR)
+            central_dir_size = (
+                UInt64(current_pos)
                 - self.end_of_central_directory.offset_of_starting_disk_number
+            )
+            if central_dir_size > 0xFFFFFFFF:
+                raise Error(
+                    "Central directory size exceeds 4GB limit - ZIP64 format"
+                    " not supported yet"
+                )
+            self.end_of_central_directory.size_of_the_central_directory = (
+                central_dir_size
             )
 
             _ = self.end_of_central_directory.write_to_file(self.file)

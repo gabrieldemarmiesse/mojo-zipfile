@@ -103,25 +103,35 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
 
         # We need to write the crc32 and the compressed size
         self.local_file_header.crc32 = self.current_crc32
-        self.local_file_header.compressed_size = UInt32(self.compressed_size)
-        self.local_file_header.uncompressed_size = UInt32(
-            self.uncompressed_size
-        )
+        if (
+            self.compressed_size > 0xFFFFFFFF
+            or self.uncompressed_size > 0xFFFFFFFF
+        ):
+            raise Error(
+                "File size exceeds 4GB limit - ZIP64 format not supported yet"
+            )
+        self.local_file_header.compressed_size = self.compressed_size
+        self.local_file_header.uncompressed_size = self.uncompressed_size
 
         old_position = self.zipfile[].file.seek(0, os.SEEK_CUR)
         _ = self.zipfile[].file.seek(self.crc32_position)
         write_zip_value(self.zipfile[].file, self.local_file_header.crc32)
         write_zip_value(
-            self.zipfile[].file, self.local_file_header.compressed_size
+            self.zipfile[].file, UInt32(self.local_file_header.compressed_size)
         )
         write_zip_value(
-            self.zipfile[].file, self.local_file_header.uncompressed_size
+            self.zipfile[].file,
+            UInt32(self.local_file_header.uncompressed_size),
         )
         _ = self.zipfile[].file.seek(old_position)
         # Create central directory entry with correct header offset
+        if self._header_offset > 0xFFFFFFFF:
+            raise Error(
+                "File offset exceeds 4GB limit - ZIP64 format not supported yet"
+            )
         self.zipfile[].central_directory_files_headers.append(
             CentralDirectoryFileHeader(
-                self.local_file_header, UInt32(self._header_offset)
+                self.local_file_header, self._header_offset
             )
         )
         self.open = False

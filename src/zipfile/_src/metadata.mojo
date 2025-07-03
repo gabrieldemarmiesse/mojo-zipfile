@@ -80,8 +80,8 @@ struct LocalFileHeader(Copyable, Movable):
     var last_mod_file_time: UInt16
     var last_mod_file_date: UInt16
     var crc32: UInt32
-    var compressed_size: UInt32
-    var uncompressed_size: UInt32
+    var compressed_size: UInt64
+    var uncompressed_size: UInt64
     var filename: List[UInt8]
     var extra_field: List[UInt8]
 
@@ -93,8 +93,8 @@ struct LocalFileHeader(Copyable, Movable):
         last_mod_file_time: UInt16,
         last_mod_file_date: UInt16,
         crc32: UInt32,
-        compressed_size: UInt32,
-        uncompressed_size: UInt32,
+        compressed_size: UInt64,
+        uncompressed_size: UInt64,
         filename: List[UInt8],
         extra_field: List[UInt8],
     ):
@@ -123,8 +123,24 @@ struct LocalFileHeader(Copyable, Movable):
         self.last_mod_file_time = read_zip_value[DType.uint16](fp)
         self.last_mod_file_date = read_zip_value[DType.uint16](fp)
         self.crc32 = read_zip_value[DType.uint32](fp)
-        self.compressed_size = read_zip_value[DType.uint32](fp)
-        self.uncompressed_size = read_zip_value[DType.uint32](fp)
+        compressed_size_raw = read_zip_value[DType.uint32](fp)
+        uncompressed_size_raw = read_zip_value[DType.uint32](fp)
+
+        # Check for ZIP64 limits
+        if compressed_size_raw == 0xFFFFFFFF:
+            raise Error(
+                "One of the compressed file sizes exceeds 4GB limit - ZIP64"
+                " format not supported yet"
+            )
+
+        if uncompressed_size_raw == 0xFFFFFFFF:
+            raise Error(
+                "One of the uncompressed file size exceeds 4GB limit - ZIP64"
+                " format not supported yet"
+            )
+
+        self.compressed_size = UInt64(compressed_size_raw)
+        self.uncompressed_size = UInt64(uncompressed_size_raw)
         filename_length = read_zip_value[DType.uint16](fp)
         extra_field_length = read_zip_value[DType.uint16](fp)
         self.filename = fp.read_bytes(Int(filename_length))
@@ -139,8 +155,17 @@ struct LocalFileHeader(Copyable, Movable):
         write_zip_value(fp, self.last_mod_file_time)
         write_zip_value(fp, self.last_mod_file_date)
         write_zip_value(fp, self.crc32)
-        write_zip_value(fp, self.compressed_size)
-        write_zip_value(fp, self.uncompressed_size)
+        # Check for ZIP64 limits before writing
+        if (
+            self.compressed_size > 0xFFFFFFFF
+            or self.uncompressed_size > 0xFFFFFFFF
+        ):
+            raise Error(
+                "File size exceeds 4GB limit - ZIP64 format not supported yet"
+            )
+
+        write_zip_value(fp, UInt32(self.compressed_size))
+        write_zip_value(fp, UInt32(self.uncompressed_size))
         write_zip_value(fp, UInt16(len(self.filename)))
         write_zip_value(fp, UInt16(len(self.extra_field)))
         write_zip_value(fp, self.filename)
@@ -158,12 +183,12 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
     var last_mod_file_time: UInt16
     var last_mod_file_date: UInt16
     var crc32: UInt32
-    var compressed_size: UInt32
-    var uncompressed_size: UInt32
+    var compressed_size: UInt64
+    var uncompressed_size: UInt64
     var disk_number_start: UInt16
     var internal_file_attributes: UInt16
     var external_file_attributes: UInt32
-    var relative_offset_of_local_header: UInt32
+    var relative_offset_of_local_header: UInt64
     var filename: List[UInt8]
     var extra_field: List[UInt8]
     var file_comment: List[UInt8]
@@ -171,7 +196,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
     fn __init__(
         out self,
         local_file_header: LocalFileHeader,
-        relative_offset_of_local_header: UInt32,
+        relative_offset_of_local_header: UInt64,
     ):
         self.version_made_by = DEFAULT_VERSION
         self.version_needed_to_extract = (
@@ -203,12 +228,12 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         last_mod_file_time: UInt16,
         last_mod_file_date: UInt16,
         crc32: UInt32,
-        compressed_size: UInt32,
-        uncompressed_size: UInt32,
+        compressed_size: UInt64,
+        uncompressed_size: UInt64,
         disk_number_start: UInt16,
         internal_file_attributes: UInt16,
         external_file_attributes: UInt32,
-        relative_offset_of_local_header: UInt32,
+        relative_offset_of_local_header: UInt64,
         filename: List[UInt8],
         extra_field: List[UInt8],
         file_comment: List[UInt8],
@@ -250,15 +275,32 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         self.last_mod_file_time = read_zip_value[DType.uint16](fp)
         self.last_mod_file_date = read_zip_value[DType.uint16](fp)
         self.crc32 = read_zip_value[DType.uint32](fp)
-        self.compressed_size = read_zip_value[DType.uint32](fp)
-        self.uncompressed_size = read_zip_value[DType.uint32](fp)
+        compressed_size_raw = read_zip_value[DType.uint32](fp)
+        uncompressed_size_raw = read_zip_value[DType.uint32](fp)
         filename_length = read_zip_value[DType.uint16](fp)
         extra_field_length = read_zip_value[DType.uint16](fp)
         file_comment_length = read_zip_value[DType.uint16](fp)
         self.disk_number_start = read_zip_value[DType.uint16](fp)
         self.internal_file_attributes = read_zip_value[DType.uint16](fp)
         self.external_file_attributes = read_zip_value[DType.uint32](fp)
-        self.relative_offset_of_local_header = read_zip_value[DType.uint32](fp)
+        relative_offset_raw = read_zip_value[DType.uint32](fp)
+
+        # Check for ZIP64 limits
+        if (
+            compressed_size_raw == 0xFFFFFFFF
+            or uncompressed_size_raw == 0xFFFFFFFF
+        ):
+            raise Error(
+                "File size exceeds 4GB limit - ZIP64 format not supported yet"
+            )
+        if relative_offset_raw == 0xFFFFFFFF:
+            raise Error(
+                "File offset exceeds 4GB limit - ZIP64 format not supported yet"
+            )
+
+        self.compressed_size = UInt64(compressed_size_raw)
+        self.uncompressed_size = UInt64(uncompressed_size_raw)
+        self.relative_offset_of_local_header = UInt64(relative_offset_raw)
         self.filename = fp.read_bytes(Int(filename_length))
         self.extra_field = fp.read_bytes(Int(extra_field_length))
         self.file_comment = fp.read_bytes(Int(file_comment_length))
@@ -272,15 +314,28 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         write_zip_value(fp, self.last_mod_file_time)
         write_zip_value(fp, self.last_mod_file_date)
         write_zip_value(fp, self.crc32)
-        write_zip_value(fp, self.compressed_size)
-        write_zip_value(fp, self.uncompressed_size)
+        # Check for ZIP64 limits before writing
+        if (
+            self.compressed_size > 0xFFFFFFFF
+            or self.uncompressed_size > 0xFFFFFFFF
+        ):
+            raise Error(
+                "File size exceeds 4GB limit - ZIP64 format not supported yet"
+            )
+        if self.relative_offset_of_local_header > 0xFFFFFFFF:
+            raise Error(
+                "File offset exceeds 4GB limit - ZIP64 format not supported yet"
+            )
+
+        write_zip_value(fp, UInt32(self.compressed_size))
+        write_zip_value(fp, UInt32(self.uncompressed_size))
         write_zip_value(fp, UInt16(len(self.filename)))
         write_zip_value(fp, UInt16(len(self.extra_field)))
         write_zip_value(fp, UInt16(len(self.file_comment)))
         write_zip_value(fp, self.disk_number_start)
         write_zip_value(fp, self.internal_file_attributes)
         write_zip_value(fp, self.external_file_attributes)
-        write_zip_value(fp, self.relative_offset_of_local_header)
+        write_zip_value(fp, UInt32(self.relative_offset_of_local_header))
         write_zip_value(fp, self.filename)
         write_zip_value(fp, self.extra_field)
         write_zip_value(fp, self.file_comment)
@@ -299,8 +354,8 @@ struct EndOfCentralDirectoryRecord(Copyable, Movable):
     var number_of_the_disk_with_the_start_of_the_central_directory: UInt16
     var total_number_of_entries_in_the_central_directory_on_this_disk: UInt16
     var total_number_of_entries_in_the_central_directory: UInt16
-    var size_of_the_central_directory: UInt32
-    var offset_of_starting_disk_number: UInt32
+    var size_of_the_central_directory: UInt64
+    var offset_of_starting_disk_number: UInt64
     var zip_file_comment: List[UInt8]
 
     fn __init__(
@@ -309,8 +364,8 @@ struct EndOfCentralDirectoryRecord(Copyable, Movable):
         number_of_the_disk_with_the_start_of_the_central_directory: UInt16,
         total_number_of_entries_in_the_central_directory_on_this_disk: UInt16,
         total_number_of_entries_in_the_central_directory: UInt16,
-        size_of_the_central_directory: UInt32,
-        offset_of_starting_disk_number: UInt32,
+        size_of_the_central_directory: UInt64,
+        offset_of_starting_disk_number: UInt64,
         zip_file_comment: List[UInt8],
     ):
         self.number_of_this_disk = number_of_this_disk
@@ -337,14 +392,37 @@ struct EndOfCentralDirectoryRecord(Copyable, Movable):
         self.number_of_the_disk_with_the_start_of_the_central_directory = (
             read_zip_value[DType.uint16](fp)
         )
+        entries_on_disk = read_zip_value[DType.uint16](fp)
+        total_entries = read_zip_value[DType.uint16](fp)
+
+        # Check for ZIP64 limits (0xFFFF indicates ZIP64 format needed)
+        if entries_on_disk == 0xFFFF or total_entries == 0xFFFF:
+            raise Error(
+                "Number of entries exceeds 65535 limit - ZIP64 format not"
+                " supported yet"
+            )
+
         self.total_number_of_entries_in_the_central_directory_on_this_disk = (
-            read_zip_value[DType.uint16](fp)
+            entries_on_disk
         )
-        self.total_number_of_entries_in_the_central_directory = read_zip_value[
-            DType.uint16
-        ](fp)
-        self.size_of_the_central_directory = read_zip_value[DType.uint32](fp)
-        self.offset_of_starting_disk_number = read_zip_value[DType.uint32](fp)
+        self.total_number_of_entries_in_the_central_directory = total_entries
+        size_raw = read_zip_value[DType.uint32](fp)
+        offset_raw = read_zip_value[DType.uint32](fp)
+
+        # Check for ZIP64 limits
+        if size_raw == 0xFFFFFFFF:
+            raise Error(
+                "Central directory size exceeds 4GB limit - ZIP64 format not"
+                " supported yet"
+            )
+        if offset_raw == 0xFFFFFFFF:
+            raise Error(
+                "Central directory offset exceeds 4GB limit - ZIP64 format not"
+                " supported yet"
+            )
+
+        self.size_of_the_central_directory = UInt64(size_raw)
+        self.offset_of_starting_disk_number = UInt64(offset_raw)
         zip_file_comment_length = read_zip_value[DType.uint16](fp)
         self.zip_file_comment = fp.read_bytes(Int(zip_file_comment_length))
 
@@ -361,8 +439,20 @@ struct EndOfCentralDirectoryRecord(Copyable, Movable):
         write_zip_value(
             fp, self.total_number_of_entries_in_the_central_directory
         )
-        write_zip_value(fp, self.size_of_the_central_directory)
-        write_zip_value(fp, self.offset_of_starting_disk_number)
+        # Check for ZIP64 limits before writing
+        if self.size_of_the_central_directory > 0xFFFFFFFF:
+            raise Error(
+                "Central directory size exceeds 4GB limit - ZIP64 format not"
+                " supported yet"
+            )
+        if self.offset_of_starting_disk_number > 0xFFFFFFFF:
+            raise Error(
+                "Central directory offset exceeds 4GB limit - ZIP64 format not"
+                " supported yet"
+            )
+
+        write_zip_value(fp, UInt32(self.size_of_the_central_directory))
+        write_zip_value(fp, UInt32(self.offset_of_starting_disk_number))
         write_zip_value(fp, UInt16(len(self.zip_file_comment)))
         write_zip_value(fp, self.zip_file_comment)
         return 22 + len(self.zip_file_comment)
