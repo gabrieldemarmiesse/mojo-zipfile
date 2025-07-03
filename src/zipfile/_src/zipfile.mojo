@@ -18,7 +18,7 @@ import zlib
 
 
 def is_zipfile[FileNameType: PathLike](filename: FileNameType) -> Bool:
-    with open(filename, "rb") as fp:
+    with open(filename, "r") as fp:
         # For now we only check the first 4 bytes, it should be good enough
         # to check if the file is a zip file
         header = fp.read_bytes(4)
