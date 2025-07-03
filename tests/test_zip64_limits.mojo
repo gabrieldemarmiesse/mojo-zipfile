@@ -188,3 +188,21 @@ def test_writing_large_file_fails():
     zf.close()
 
     _ = os.remove(test_file)
+
+
+def test_writing_lots_of_files_raises():
+    """Test that attempting to write a large file fails with proper error message.
+    """
+
+    test_file = "/tmp/test_write_many_files.zip"
+
+    # Create a ZipFile for writing and try to write a file that would exceed ZIP64 limits
+    var zf = ZipFile(test_file, "w")
+
+    for i in range((65535 + 1)):
+        zf.writestr(String(i), "")
+
+    with assert_raises(contains="ZIP64 format not supported yet"):
+        zf.close()
+
+    _ = os.remove(test_file)
