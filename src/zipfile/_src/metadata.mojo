@@ -193,7 +193,9 @@ struct LocalFileHeader(Copyable, Movable):
 
             offset += 4 + Int(size)
 
-    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
+    fn write_to_file(
+        self, mut fp: FileHandle, allow_zip64: Bool = True
+    ) raises -> Int:
         # We write the fixed size part of the header
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.version_needed_to_extract)
@@ -207,9 +209,11 @@ struct LocalFileHeader(Copyable, Movable):
             self.compressed_size > 0xFFFFFFFF
             or self.uncompressed_size > 0xFFFFFFFF
         ):
-            raise Error(
-                "File size exceeds 4GB limit - ZIP64 format not supported yet"
-            )
+            if not allow_zip64:
+                raise Error(
+                    "File size exceeds 4GB limit and allowZip64 is False"
+                )
+            # ZIP64 format will be used automatically when needed
 
         write_zip_value(fp, UInt32(self.compressed_size))
         write_zip_value(fp, UInt32(self.uncompressed_size))
@@ -401,7 +405,9 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
 
             offset += 4 + Int(size)
 
-    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
+    fn write_to_file(
+        self, mut fp: FileHandle, allow_zip64: Bool = True
+    ) raises -> Int:
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.version_made_by)
         write_zip_value(fp, self.version_needed_to_extract)
@@ -415,13 +421,17 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
             self.compressed_size > 0xFFFFFFFF
             or self.uncompressed_size > 0xFFFFFFFF
         ):
-            raise Error(
-                "File size exceeds 4GB limit - ZIP64 format not supported yet"
-            )
+            if not allow_zip64:
+                raise Error(
+                    "File size exceeds 4GB limit and allowZip64 is False"
+                )
+            # ZIP64 format will be used automatically when needed
         if self.relative_offset_of_local_header > 0xFFFFFFFF:
-            raise Error(
-                "File offset exceeds 4GB limit - ZIP64 format not supported yet"
-            )
+            if not allow_zip64:
+                raise Error(
+                    "File offset exceeds 4GB limit and allowZip64 is False"
+                )
+            # ZIP64 format will be used automatically when needed
 
         write_zip_value(fp, UInt32(self.compressed_size))
         write_zip_value(fp, UInt32(self.uncompressed_size))
@@ -505,7 +515,9 @@ struct EndOfCentralDirectoryRecord(Copyable, Movable):
         zip_file_comment_length = read_zip_value[DType.uint16](fp)
         self.zip_file_comment = fp.read_bytes(Int(zip_file_comment_length))
 
-    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
+    fn write_to_file(
+        self, mut fp: FileHandle, allow_zip64: Bool = True
+    ) raises -> Int:
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.number_of_this_disk)
         write_zip_value(

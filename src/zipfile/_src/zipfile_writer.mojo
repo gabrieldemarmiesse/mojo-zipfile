@@ -23,6 +23,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
     var _uncompressed_buffer: List[UInt8]  # Buffer for deflate compression
     var _compresslevel: Int32  # Compression level for deflate
     var _header_offset: UInt64  # Position where the local file header was written
+    var _force_zip64: Bool  # Force ZIP64 format for this file
 
     fn __init__(
         out self,
@@ -31,6 +32,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         mode: String,
         compression_method: UInt16,
         compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
+        force_zip64: Bool = False,
     ) raises:
         self.zipfile = zipfile
         self.local_file_header = LocalFileHeader(
@@ -52,10 +54,13 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         self.uncompressed_size = 0
         self._header_offset = self.zipfile[].file.seek(0, os.SEEK_CUR)
         self.crc32_position = self._header_offset + 14
-        _ = self.local_file_header.write_to_file(self.zipfile[].file)
+        _ = self.local_file_header.write_to_file(
+            self.zipfile[].file, self.zipfile[].allow_zip64
+        )
         self.open = True
         self._uncompressed_buffer = List[UInt8]()
         self._compresslevel = compresslevel
+        self._force_zip64 = force_zip64
 
     fn write(mut self, data: Span[UInt8]) raises:
         if not self.open:
@@ -103,13 +108,29 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
 
         # We need to write the crc32 and the compressed size
         self.local_file_header.crc32 = self.current_crc32
-        if (
+
+        # Check if ZIP64 format is needed or forced
+        needs_zip64 = (
             self.compressed_size > 0xFFFFFFFF
             or self.uncompressed_size > 0xFFFFFFFF
-        ):
-            raise Error(
-                "File size exceeds 4GB limit - ZIP64 format not supported yet"
-            )
+            or self._force_zip64
+        )
+
+        if needs_zip64:
+            if not self.zipfile[].allow_zip64:
+                if self._force_zip64:
+                    self.open = (
+                        False  # Prevent destructor from trying to close again
+                    )
+                    raise Error("force_zip64=True but allowZip64 is False")
+                else:
+                    self.open = (
+                        False  # Prevent destructor from trying to close again
+                    )
+                    raise Error(
+                        "File size exceeds 4GB limit and allowZip64 is False"
+                    )
+            # ZIP64 format will be used automatically when needed
         self.local_file_header.compressed_size = self.compressed_size
         self.local_file_header.uncompressed_size = self.uncompressed_size
 
@@ -125,10 +146,21 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         )
         _ = self.zipfile[].file.seek(old_position)
         # Create central directory entry with correct header offset
-        if self._header_offset > 0xFFFFFFFF:
-            raise Error(
-                "File offset exceeds 4GB limit - ZIP64 format not supported yet"
-            )
+        if self._header_offset > 0xFFFFFFFF or self._force_zip64:
+            if not self.zipfile[].allow_zip64:
+                if self._force_zip64:
+                    self.open = (
+                        False  # Prevent destructor from trying to close again
+                    )
+                    raise Error("force_zip64=True but allowZip64 is False")
+                else:
+                    self.open = (
+                        False  # Prevent destructor from trying to close again
+                    )
+                    raise Error(
+                        "File offset exceeds 4GB limit and allowZip64 is False"
+                    )
+            # ZIP64 format will be used automatically when needed
         self.zipfile[].central_directory_files_headers.append(
             CentralDirectoryFileHeader(
                 self.local_file_header, self._header_offset
