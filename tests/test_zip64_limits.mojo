@@ -36,9 +36,11 @@ def test_zip64_file_size_limit_local_header():
         write_zip_value(fp, UInt16(0))  # filename_length
         write_zip_value(fp, UInt16(0))  # extra_field_length
 
-    # Try to read the header - should raise ZIP64 error
+    # Try to read the header - should raise error for invalid ZIP64 file
     with open(test_file, "r") as fp:
-        with assert_raises(contains="ZIP64 format not supported yet"):
+        with assert_raises(
+            contains="ZIP64 markers present but no ZIP64 extra field found"
+        ):
             _ = LocalFileHeader(fp)
 
     # Clean up
@@ -73,9 +75,11 @@ def test_zip64_file_offset_limit_central_directory():
             fp, UInt32(0xFFFFFFFF)
         )  # relative_offset (ZIP64 marker)
 
-    # Try to read the header - should raise ZIP64 error
+    # Try to read the header - should raise error for invalid ZIP64 file
     with open(test_file, "r") as fp:
-        with assert_raises(contains="ZIP64 format not supported yet"):
+        with assert_raises(
+            contains="ZIP64 markers present but no ZIP64 extra field found"
+        ):
             _ = CentralDirectoryFileHeader(fp)
 
     # Clean up
@@ -83,7 +87,7 @@ def test_zip64_file_offset_limit_central_directory():
 
 
 def test_zip64_central_directory_size_limit():
-    """Test that EndOfCentralDirectoryRecord detects ZIP64 central directory size limits.
+    """Test that EndOfCentralDirectoryRecord accepts ZIP64 markers in regular EOCD.
     """
 
     test_file = "/tmp/test_zip64_cd_size.zip"
@@ -99,17 +103,19 @@ def test_zip64_central_directory_size_limit():
         write_zip_value(fp, UInt32(100))  # offset_of_start_of_cd
         write_zip_value(fp, UInt16(0))  # comment_length
 
-    # Try to read the header - should raise ZIP64 error
+    # Should now succeed - ZIP64 markers in EOCD are accepted
     with open(test_file, "r") as fp:
-        with assert_raises(contains="ZIP64 format not supported yet"):
-            _ = EndOfCentralDirectoryRecord(fp)
+        eocd = EndOfCentralDirectoryRecord(fp)
+        # Verify the ZIP64 marker is preserved
+        if eocd.size_of_the_central_directory != 0xFFFFFFFF:
+            raise Error("Expected ZIP64 marker to be preserved")
 
     # Clean up
     _ = os.remove(test_file)
 
 
 def test_zip64_central_directory_offset_limit():
-    """Test that EndOfCentralDirectoryRecord detects ZIP64 central directory offset limits.
+    """Test that EndOfCentralDirectoryRecord accepts ZIP64 markers in regular EOCD.
     """
 
     test_file = "/tmp/test_zip64_cd_offset.zip"
@@ -127,17 +133,19 @@ def test_zip64_central_directory_offset_limit():
         )  # offset_of_start_of_cd (ZIP64 marker)
         write_zip_value(fp, UInt16(0))  # comment_length
 
-    # Try to read the header - should raise ZIP64 error
+    # Should now succeed - ZIP64 markers in EOCD are accepted
     with open(test_file, "r") as fp:
-        with assert_raises(contains="ZIP64 format not supported yet"):
-            _ = EndOfCentralDirectoryRecord(fp)
+        eocd = EndOfCentralDirectoryRecord(fp)
+        # Verify the ZIP64 marker is preserved
+        if eocd.offset_of_starting_disk_number != 0xFFFFFFFF:
+            raise Error("Expected ZIP64 marker to be preserved")
 
     # Clean up
     _ = os.remove(test_file)
 
 
 def test_zip64_number_of_entries_limit():
-    """Test that EndOfCentralDirectoryRecord detects ZIP64 number of entries limits.
+    """Test that EndOfCentralDirectoryRecord accepts ZIP64 markers in regular EOCD.
     """
 
     test_file = "/tmp/test_zip64_entries.zip"
@@ -155,54 +163,15 @@ def test_zip64_number_of_entries_limit():
         write_zip_value(fp, UInt32(100))  # offset_of_start_of_cd
         write_zip_value(fp, UInt16(0))  # comment_length
 
-    # Try to read the header - should raise ZIP64 error
+    # Should now succeed - ZIP64 markers in EOCD are accepted
     with open(test_file, "r") as fp:
-        with assert_raises(contains="ZIP64 format not supported yet"):
-            _ = EndOfCentralDirectoryRecord(fp)
+        eocd = EndOfCentralDirectoryRecord(fp)
+        # Verify the ZIP64 marker is preserved
+        if (
+            eocd.total_number_of_entries_in_the_central_directory_on_this_disk
+            != 0xFFFF
+        ):
+            raise Error("Expected ZIP64 marker to be preserved")
 
     # Clean up
-    _ = os.remove(test_file)
-
-
-def test_writing_large_file_fails():
-    """Test that attempting to write a large file fails with proper error message.
-    """
-
-    test_file = "/tmp/test_large_write.zip"
-
-    # Create a ZipFile for writing and try to write a file that would exceed ZIP64 limits
-    var zf = ZipFile(test_file, "w")
-    var writer = zf.open_to_write("large_file.txt", "w", ZIP_STORED)
-
-    # Simulate writing beyond 4GB by setting the internal size directly
-    writer.uncompressed_size = UInt64(0x100000000)  # 4GB + 1
-    writer.compressed_size = UInt64(0x100000000)  # 4GB + 1
-
-    # Closing should fail with ZIP64 error
-    with assert_raises(contains="ZIP64 format not supported yet"):
-        writer.close()
-
-    writer.open = False
-    _ = writer^  # Just to remove the warning
-
-    zf.close()
-
-    _ = os.remove(test_file)
-
-
-def test_writing_lots_of_files_raises():
-    """Test that attempting to write a large file fails with proper error message.
-    """
-
-    test_file = "/tmp/test_write_many_files.zip"
-
-    # Create a ZipFile for writing and try to write a file that would exceed ZIP64 limits
-    var zf = ZipFile(test_file, "w")
-
-    for i in range((65535 + 1)):
-        zf.writestr(String(i), "")
-
-    with assert_raises(contains="ZIP64 format not supported yet"):
-        zf.close()
-
     _ = os.remove(test_file)

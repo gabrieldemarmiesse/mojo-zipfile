@@ -15,6 +15,11 @@ pixi run test
 
 **Note**: The `pixi run test` command runs the complete test suite (all 94+ tests). When this command succeeds, it means all functionality is working correctly. There is no need to run individual test files separately unless debugging a specific issue.
 
+Run an individual test function with:
+```bash
+pixi run mojo test -I ./src "tests/test_zip64_limits.mojo::test_zip64_number_of_entries_limit()"
+```
+
 ## Architecture
 
 ### Core Components

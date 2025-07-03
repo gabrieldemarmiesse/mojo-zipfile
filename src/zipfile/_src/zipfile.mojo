@@ -6,6 +6,8 @@ from .metadata import (
     LocalFileHeader,
     CentralDirectoryFileHeader,
     EndOfCentralDirectoryRecord,
+    Zip64EndOfCentralDirectoryRecord,
+    Zip64EndOfCentralDirectoryLocator,
     ZIP_STORED,
     ZIP_DEFLATED,
     GeneralPurposeBitFlag,
@@ -36,6 +38,9 @@ struct ZipFile:
     var file_size: UInt64
     var central_directory_files_headers: List[CentralDirectoryFileHeader]
     var end_of_central_directory: EndOfCentralDirectoryRecord
+    var zip64_end_of_central_directory: Optional[
+        Zip64EndOfCentralDirectoryRecord
+    ]
 
     fn __init__[
         FileNameType: PathLike
@@ -47,17 +52,35 @@ struct ZipFile:
         self.central_directory_files_headers = List[
             CentralDirectoryFileHeader
         ]()
+        self.zip64_end_of_central_directory = None
         if mode == "r":
             self.file_size = self.file.seek(0, os.SEEK_END)
+            self.end_of_central_directory_start = 0  # Initialize with default
 
-            # Let's assume that the file does not contains any comment.
-            # Later on we can do the signature search.
-            self.end_of_central_directory_start = self.file.seek(
-                self.file_size - 22
-            )
+            # Initialize with default values
             self.end_of_central_directory = EndOfCentralDirectoryRecord(
-                self.file
+                number_of_this_disk=0,
+                number_of_the_disk_with_the_start_of_the_central_directory=0,
+                total_number_of_entries_in_the_central_directory_on_this_disk=0,
+                total_number_of_entries_in_the_central_directory=0,
+                size_of_the_central_directory=0,
+                offset_of_starting_disk_number=0,
+                zip_file_comment=List[UInt8](),
             )
+
+            # Look for ZIP64 end of central directory locator first
+            self._try_read_zip64_records()
+
+            # If ZIP64 wasn't found, try regular end of central directory
+            if not self.zip64_end_of_central_directory:
+                # Let's assume that the file does not contains any comment.
+                # Later on we can do the signature search.
+                self.end_of_central_directory_start = self.file.seek(
+                    self.file_size - 22
+                )
+                self.end_of_central_directory = EndOfCentralDirectoryRecord(
+                    self.file
+                )
         elif mode == "w":
             self.file_size = 0
             self.end_of_central_directory_start = 0
@@ -83,6 +106,9 @@ struct ZipFile:
         self.file_size = existing.file_size
         self.central_directory_files_headers = (
             existing.central_directory_files_headers^
+        )
+        self.zip64_end_of_central_directory = (
+            existing.zip64_end_of_central_directory^
         )
 
     fn __enter__(ref self) -> ref [__origin_of(self)] ZipFile:
@@ -217,9 +243,18 @@ struct ZipFile:
         raise Error(String("File ") + name + " not found in zip file")
 
     fn _start_reading_central_directory_file_headers(mut self) raises:
-        _ = self.file.seek(
-            UInt64(self.end_of_central_directory.offset_of_starting_disk_number)
-        )
+        if self.zip64_end_of_central_directory:
+            _ = self.file.seek(
+                UInt64(
+                    self.zip64_end_of_central_directory.value().offset_of_starting_disk_number
+                )
+            )
+        else:
+            _ = self.file.seek(
+                UInt64(
+                    self.end_of_central_directory.offset_of_starting_disk_number
+                )
+            )
 
     fn _read_next_central_directory_file_header(
         mut self,
@@ -241,3 +276,62 @@ struct ZipFile:
                 break
             result.append(ZipInfo(header.value()))
         return result
+
+    fn _try_read_zip64_records(mut self) raises:
+        """Try to read ZIP64 end of central directory records."""
+        # Look for ZIP64 end of central directory locator
+        # It's located 20 bytes before the end of the file (assuming no comment)
+        if self.file_size < 20:
+            return
+
+        try:
+            # Try to read ZIP64 end of central directory locator
+            _ = self.file.seek(self.file_size - 20)
+            var locator = Zip64EndOfCentralDirectoryLocator(self.file)
+
+            # Now read the ZIP64 end of central directory record
+            _ = self.file.seek(
+                locator.relative_offset_of_the_zip64_end_of_central_directory_record
+            )
+            var zip64_eocd = Zip64EndOfCentralDirectoryRecord(self.file)
+
+            # Store the ZIP64 record and create a compatible regular EOCD
+            self.zip64_end_of_central_directory = zip64_eocd
+
+            # Create a regular EOCD that uses the ZIP64 values
+            self.end_of_central_directory = EndOfCentralDirectoryRecord(
+                number_of_this_disk=UInt16(
+                    min(zip64_eocd.number_of_this_disk, 0xFFFF)
+                ),
+                number_of_the_disk_with_the_start_of_the_central_directory=UInt16(
+                    min(
+                        zip64_eocd.number_of_the_disk_with_the_start_of_the_central_directory,
+                        0xFFFF,
+                    )
+                ),
+                total_number_of_entries_in_the_central_directory_on_this_disk=UInt16(
+                    min(
+                        zip64_eocd.total_number_of_entries_in_the_central_directory_on_this_disk,
+                        0xFFFF,
+                    )
+                ),
+                total_number_of_entries_in_the_central_directory=UInt16(
+                    min(
+                        zip64_eocd.total_number_of_entries_in_the_central_directory,
+                        0xFFFF,
+                    )
+                ),
+                size_of_the_central_directory=zip64_eocd.size_of_the_central_directory,
+                offset_of_starting_disk_number=zip64_eocd.offset_of_starting_disk_number,
+                zip_file_comment=List[UInt8](),
+            )
+
+            # Calculate the end of central directory start position
+            self.end_of_central_directory_start = (
+                zip64_eocd.offset_of_starting_disk_number
+                + zip64_eocd.size_of_the_central_directory
+            )
+
+        except:
+            # ZIP64 records not found or invalid, will fall back to regular EOCD
+            pass
