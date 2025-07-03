@@ -170,33 +170,21 @@ def test_writing_large_file_fails():
 
     test_file = "/tmp/test_large_write.zip"
 
-    try:
-        # Create a ZipFile for writing and try to write a file that would exceed ZIP64 limits
-        var zf = ZipFile(test_file, "w")
-        var writer = zf.open_to_write("large_file.txt", "w", ZIP_STORED)
+    # Create a ZipFile for writing and try to write a file that would exceed ZIP64 limits
+    var zf = ZipFile(test_file, "w")
+    var writer = zf.open_to_write("large_file.txt", "w", ZIP_STORED)
 
-        # Simulate writing beyond 4GB by setting the internal size directly
-        writer.uncompressed_size = UInt64(0x100000000)  # 4GB + 1
-        writer.compressed_size = UInt64(0x100000000)  # 4GB + 1
+    # Simulate writing beyond 4GB by setting the internal size directly
+    writer.uncompressed_size = UInt64(0x100000000)  # 4GB + 1
+    writer.compressed_size = UInt64(0x100000000)  # 4GB + 1
 
-        # Closing should fail with ZIP64 error
-        with assert_raises(contains="ZIP64 format not supported yet"):
-            writer.close()
+    # Closing should fail with ZIP64 error
+    with assert_raises(contains="ZIP64 format not supported yet"):
+        writer.close()
 
-        # Set writer as closed to prevent destructor issues
-        _ = writer.open
-        writer.open = False
+    writer.open = False
+    _ = writer^  # Just to remove the warning
 
-        try:
-            zf.close()
-        except:
-            pass  # Expected to fail since writer didn't close properly
+    zf.close()
 
-    except:
-        pass  # Handle any other issues
-
-    # Clean up
-    try:
-        _ = os.remove(test_file)
-    except:
-        pass  # File might not exist if test failed early
+    _ = os.remove(test_file)
