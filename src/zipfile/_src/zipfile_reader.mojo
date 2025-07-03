@@ -84,53 +84,6 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         var bytes_needed = size if size > 0 else -1  # -1 means read all
 
         while True:
-            # Determine how much to request from decompressor
-            var chunk_request = 65536  # Default chunk size
-            if bytes_needed > 0:
-                chunk_request = min(bytes_needed, 65536)
-
-            # First, try to get data from the decompressor
-            var decompressed_data = self._streaming_decompressor.read(
-                chunk_request
-            )
-
-            if len(decompressed_data) > 0:
-                # Add to result
-                result += decompressed_data
-
-                # Update CRC32 with decompressed data
-                self.current_crc32 = zlib.crc32(
-                    decompressed_data, self.current_crc32
-                )
-
-                # Update bytes needed counter
-                if bytes_needed > 0:
-                    bytes_needed -= len(decompressed_data)
-                    if bytes_needed <= 0:
-                        # We have enough data
-                        return result
-
-                # If reading all data (size <= 0), continue until finished
-                if size <= 0:
-                    # Check if we've read all data and verify CRC
-                    if (
-                        self._streaming_decompressor.is_finished()
-                        and self._bytes_read_from_file == self.compressed_size
-                    ):
-                        self._check_crc32()
-                        return result
-                    # Otherwise continue reading
-                else:
-                    # For specific size requests, return what we have so far
-                    return result
-
-            # If decompressor can't provide data, check if we need more input
-            if self._streaming_decompressor.is_finished():
-                # All done, return what we have
-                if self._bytes_read_from_file == self.compressed_size:
-                    self._check_crc32()
-                return result
-
             # Read more compressed data from file if available
             if self._bytes_read_from_file < self.compressed_size:
                 var remaining_compressed = (
@@ -141,8 +94,65 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 var compressed_chunk = self.file[].read_bytes(to_read)
                 self._bytes_read_from_file += UInt64(len(compressed_chunk))
 
-                # Feed to decompressor
-                self._streaming_decompressor.feed_input(compressed_chunk)
-            # We've read all compressed data from file, but decompressor may still have data to process
-            # This is normal - zlib might need multiple calls to process all the input
-            # Continue the loop to let decompressor process remaining input buffer data
+                # Decompress this chunk
+                var max_length = -1
+                if bytes_needed > 0:
+                    max_length = bytes_needed
+
+                var decompressed_data = self._streaming_decompressor.decompress(
+                    compressed_chunk, max_length
+                )
+
+                if len(decompressed_data) > 0:
+                    # Add to result
+                    result += decompressed_data
+
+                    # Update CRC32 with decompressed data
+                    self.current_crc32 = zlib.crc32(
+                        decompressed_data, self.current_crc32
+                    )
+
+                    # Update bytes needed counter
+                    if bytes_needed > 0:
+                        bytes_needed -= len(decompressed_data)
+                        if bytes_needed <= 0:
+                            # We have enough data
+                            return result
+            else:
+                # We've read all compressed data from file
+                # Check if decompressor has any remaining data
+                if self._streaming_decompressor.eof:
+                    # Call flush to get any remaining data in buffers
+                    var flushed_data = self._streaming_decompressor.flush()
+
+                    if len(flushed_data) > 0:
+                        result += flushed_data
+                        self.current_crc32 = zlib.crc32(
+                            flushed_data, self.current_crc32
+                        )
+
+                    # All done, return what we have
+                    self._check_crc32()
+                    return result
+                else:
+                    # Try to get remaining data from decompressor
+                    var decompressed_data = (
+                        self._streaming_decompressor.decompress(
+                            List[UInt8](), -1
+                        )
+                    )
+
+                    if len(decompressed_data) > 0:
+                        result += decompressed_data
+                        self.current_crc32 = zlib.crc32(
+                            decompressed_data, self.current_crc32
+                        )
+
+                        if bytes_needed > 0:
+                            bytes_needed -= len(decompressed_data)
+                            if bytes_needed <= 0:
+                                return result
+                    else:
+                        # No more data available
+                        self._check_crc32()
+                        return result
