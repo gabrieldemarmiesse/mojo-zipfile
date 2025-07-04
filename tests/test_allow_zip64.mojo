@@ -183,10 +183,10 @@ def test_read_zip64_large_file():
     """Test that allowZip64=False creates files compatible with Python's allowZip64=False.
     """
     file_path = "/tmp/test_read_zip64_large_file.zip"
-
-    Python.add_to_path("./tests")
-    tests_helper = Python.import_module("tests_helper")
-    tests_helper.create_zip64_large_file(file_path)
+    if not os.path.exists(file_path):
+        Python.add_to_path("./tests")
+        tests_helper = Python.import_module("tests_helper")
+        tests_helper.create_zip64_large_file(file_path)
 
     # now we read it back with Mojo
     zip_file = ZipFile(file_path, "r")
