@@ -299,13 +299,17 @@ struct ZipFile:
     fn _try_read_zip64_records(mut self) raises:
         """Try to read ZIP64 end of central directory records."""
         # Look for ZIP64 end of central directory locator
-        # It's located 20 bytes before the end of the file (assuming no comment)
-        if self.file_size < 20:
+        # In ZIP64 files, the structure at the end is:
+        # - ZIP64 End of Central Directory Record
+        # - ZIP64 End of Central Directory Locator (20 bytes)
+        # - End of Central Directory Record (22 bytes)
+        # So the ZIP64 locator is at file_size - 42
+        if self.file_size < 42:
             return
 
         try:
             # Try to read ZIP64 end of central directory locator
-            _ = self.file.seek(self.file_size - 20)
+            _ = self.file.seek(self.file_size - 42)
             var locator = Zip64EndOfCentralDirectoryLocator(self.file)
 
             # Now read the ZIP64 end of central directory record
