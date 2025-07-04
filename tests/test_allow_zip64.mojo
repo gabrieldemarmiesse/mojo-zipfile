@@ -22,7 +22,7 @@ def test_allow_zip64_default_true():
 
 def test_allow_zip64_explicit_true():
     """Test that allowZip64 can be explicitly set to True."""
-    file_path = "/tmp/test_allow_zip64_true.zip"
+    file_path = "/tmp/test_allow_zip64_explicit_true.zip"
 
     # Create a ZipFile with allowZip64=True
     zip_file = ZipFile(file_path, "w", allow_zip64=True)
@@ -37,7 +37,7 @@ def test_allow_zip64_explicit_true():
 
 def test_allow_zip64_explicit_false():
     """Test that allowZip64 can be explicitly set to False."""
-    file_path = "/tmp/test_allow_zip64_false.zip"
+    file_path = "/tmp/test_allow_zip64_explicit_false.zip"
 
     # Create a ZipFile with allowZip64=False
     zip_file = ZipFile(file_path, "w", allow_zip64=False)
@@ -52,7 +52,7 @@ def test_allow_zip64_explicit_false():
 
 def test_allow_zip64_false_rejects_large_content():
     """Test that allowZip64=False rejects large content."""
-    file_path = "/tmp/test_allow_zip64_false_large.zip"
+    file_path = "/tmp/test_allow_zip64_false_rejects_large_content.zip"
 
     # Create a ZipFile with allowZip64=False
     zip_file = ZipFile(file_path, "w", allow_zip64=False)
@@ -72,7 +72,7 @@ def test_allow_zip64_false_rejects_large_content():
 
 def test_allow_zip64_false_rejects_many_files():
     """Test that allowZip64=False rejects too many files."""
-    file_path = "/tmp/test_allow_zip64_false_many.zip"
+    file_path = "/tmp/test_allow_zip64_false_rejects_many_files.zip"
 
     # Create a ZipFile with allowZip64=False
     zip_file = ZipFile(file_path, "w", allow_zip64=False)
@@ -105,7 +105,7 @@ def test_allow_zip64_false_rejects_many_files():
 
 def test_allow_zip64_read_mode():
     """Test that allowZip64 works correctly in read mode."""
-    file_path = "/tmp/test_allow_zip64_read.zip"
+    file_path = "/tmp/test_allow_zip64_read_mode.zip"
 
     # First create a test ZIP file
     zip_write = ZipFile(file_path, "w", allow_zip64=True)
@@ -144,7 +144,7 @@ def test_allow_zip64_read_mode():
 def test_allow_zip64_false_integration_with_python():
     """Test that allowZip64=False creates files compatible with Python's allowZip64=False.
     """
-    file_path = "/tmp/test_allow_zip64_false_python.zip"
+    file_path = "/tmp/test_allow_zip64_false_integration_with_python.zip"
 
     # Create a file with Mojo's allowZip64=False
     zip_file = ZipFile(file_path, "w", allow_zip64=False)
@@ -209,7 +209,7 @@ def test_read_zip64_large_file():
 
 
 def test_write_zip64_large_file_mojo_read_python():
-    file_path = "/tmp/test_write_zip64_large_file_mojo.zip"
+    file_path = "/tmp/test_write_zip64_large_file_mojo_read_python.zip"
 
     zip_file = ZipFile(file_path, "w", allow_zip64=True)
 
@@ -289,7 +289,7 @@ def test_write_zip64_large_file_mojo_read_python():
 def test_read_zip64_many_files_in_zip():
     """Test that allowZip64=False creates files compatible with Python's allowZip64=False.
     """
-    file_path = "/tmp/test_read_zip64_large_file.zip"
+    file_path = "/tmp/test_read_zip64_many_files_in_zip.zip"
 
     py_zipfile = Python.import_module("zipfile")
     py_zip_file_archive = py_zipfile.ZipFile(file_path, "w")
