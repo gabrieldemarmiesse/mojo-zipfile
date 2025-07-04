@@ -286,6 +286,41 @@ def test_write_zip64_large_file_mojo_read_python():
     _ = os.remove(file_path)
 
 
+def test_write_zip64_large_file_disallow():
+    file_path = "/tmp/test_write_zip64_large_file_disallow.zip"
+
+    zip_file = ZipFile(file_path, "w", allow_zip64=False)
+
+    # Create a file writer for the large file
+    writer = zip_file.open_to_write("large_file.txt", "w")
+
+    chunk_size = 10 * 1024 * 1024
+    target_size = 4 * 1024 * 1024 * 1024 + 50
+    chunk_data = "B" * chunk_size
+    bytes_written = 0
+
+    while bytes_written < target_size:
+        remaining = target_size - bytes_written
+        if remaining < chunk_size:
+            # Write the remaining bytes
+            writer.write(("B" * remaining).as_bytes())
+            bytes_written += remaining
+        else:
+            # Write a full chunk
+            writer.write(chunk_data.as_bytes())
+            bytes_written += chunk_size
+    with assert_raises(
+        contains="File size exceeds 4GB limit and allowZip64 is False"
+    ):
+        writer.close()
+    with assert_raises(
+        contains=(
+            "Central directory offset exceeds 4GB limit and allowZip64 is False"
+        )
+    ):
+        zip_file.close()
+
+
 def test_read_zip64_many_files_in_zip():
     """Test that allowZip64=False creates files compatible with Python's allowZip64=False.
     """
