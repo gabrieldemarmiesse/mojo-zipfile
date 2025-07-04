@@ -303,3 +303,21 @@ def test_read_zip64_many_files_in_zip():
     assert_equal(len(zip_file.infolist()), 70_000)
 
     os.path.remove(file_path)
+
+
+def test_write_zip64_many_files_in_zip():
+    # Same but the other way around
+    file_path = "/tmp/test_write_zip64_many_files_in_zip.zip"
+    zip_file = ZipFile(file_path, "w")
+    for i in range(70_000):
+        filename = String(i) + ".txt"
+        zip_file.writestr(filename, "!")
+    zip_file.close()
+
+    # now we read it back with Python
+    py_zipfile = Python.import_module("zipfile")
+    py_zip_file_archive = py_zipfile.ZipFile(file_path, "r")
+    assert_equal(len(py_zip_file_archive.infolist()), 70_000)
+    py_zip_file_archive.close()
+
+    os.path.remove(file_path)
