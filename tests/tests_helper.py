@@ -41,7 +41,7 @@ def create_zip64_large_file(path: str):
     # Create a file that's 4GB + 100 bytes to force ZIP64
     large_size = 4 * 1024 * 1024 * 1024 + 100
     
-    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as zf:
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as zf:
         # Create a large file by writing chunks
         with zf.open("large_file.txt", "w", force_zip64=True) as f:
             chunk_size = 1024 * 1024  # 1MB chunks

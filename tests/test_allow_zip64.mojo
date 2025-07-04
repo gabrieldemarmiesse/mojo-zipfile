@@ -1,4 +1,4 @@
-from testing import assert_raises
+from testing import assert_raises, assert_equal, assert_true
 import os
 from zipfile import ZipFile
 from python import Python
@@ -177,3 +177,28 @@ def test_allow_zip64_false_integration_with_python():
 
     # Clean up
     _ = os.remove(file_path)
+
+
+def test_read_zip64_large_file():
+    """Test that allowZip64=False creates files compatible with Python's allowZip64=False.
+    """
+    file_path = "/tmp/test_read_zip64_large_file.zip"
+
+    Python.add_to_path("./tests")
+    tests_helper = Python.import_module("tests_helper")
+    tests_helper.create_zip64_large_file(file_path)
+
+    # now we read it back with Mojo
+    zip_file = ZipFile(file_path, "r")
+    assert_equal(len(zip_file.infolist()), 1)
+
+    # Let's check the size of the file
+    f = zip_file.open_to_read("large_file.txt", "r")
+    bytes_seen = 0
+
+    while True:
+        var chunk = f.read(1024 * 1024)  # Read in 1MB chunks
+        if not chunk:
+            break
+        bytes_seen += len(chunk)
+    assert_true(bytes_seen > 4 * 1024 * 1024 * 1024, "File size should be larger than 4GB")
