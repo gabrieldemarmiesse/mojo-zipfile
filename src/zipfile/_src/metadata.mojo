@@ -204,24 +204,53 @@ struct LocalFileHeader(Copyable, Movable):
         write_zip_value(fp, self.last_mod_file_time)
         write_zip_value(fp, self.last_mod_file_date)
         write_zip_value(fp, self.crc32)
-        # Check for ZIP64 limits before writing
-        if (
+
+        # Check if we need ZIP64 format
+        var needs_zip64 = (
             self.compressed_size > 0xFFFFFFFF
             or self.uncompressed_size > 0xFFFFFFFF
-        ):
-            if not allow_zip64:
-                raise Error(
-                    "File size exceeds 4GB limit and allowZip64 is False"
-                )
-            # ZIP64 format will be used automatically when needed
+        )
 
-        write_zip_value(fp, UInt32(self.compressed_size))
-        write_zip_value(fp, UInt32(self.uncompressed_size))
+        if needs_zip64 and not allow_zip64:
+            raise Error("File size exceeds 4GB limit and allowZip64 is False")
+
+        # Create ZIP64 extra field if needed
+        var extra_field_data = self.extra_field
+        if needs_zip64:
+            # Create ZIP64 extra field
+            var zip64_extra = Zip64ExtendedInformationExtraField(
+                self.uncompressed_size,
+                self.compressed_size,
+                0,  # no offset in local header
+                0,  # no disk number in local header
+            )
+            # For local file header, include sizes if they exceed 4GB
+            var include_original = self.uncompressed_size > 0xFFFFFFFF
+            var include_compressed = self.compressed_size > 0xFFFFFFFF
+            var zip64_data = zip64_extra.create_extra_field_data(
+                include_original, include_compressed, False, False
+            )
+
+            # Append ZIP64 extra field to existing extra fields
+            for byte in zip64_data:
+                extra_field_data.append(byte)
+
+        # Write sizes - use ZIP64 markers only if size exceeds 4GB
+        if self.compressed_size > 0xFFFFFFFF:
+            write_zip_value(fp, UInt32(0xFFFFFFFF))  # compressed size marker
+        else:
+            write_zip_value(fp, UInt32(self.compressed_size))
+
+        if self.uncompressed_size > 0xFFFFFFFF:
+            write_zip_value(fp, UInt32(0xFFFFFFFF))  # uncompressed size marker
+        else:
+            write_zip_value(fp, UInt32(self.uncompressed_size))
+
         write_zip_value(fp, UInt16(len(self.filename)))
-        write_zip_value(fp, UInt16(len(self.extra_field)))
+        write_zip_value(fp, UInt16(len(extra_field_data)))
         write_zip_value(fp, self.filename)
-        write_zip_value(fp, self.extra_field)
-        return 30 + len(self.filename) + len(self.extra_field)
+        write_zip_value(fp, extra_field_data)
+        return 30 + len(self.filename) + len(extra_field_data)
 
 
 struct CentralDirectoryFileHeader(Copyable, Movable):
@@ -416,39 +445,82 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         write_zip_value(fp, self.last_mod_file_time)
         write_zip_value(fp, self.last_mod_file_date)
         write_zip_value(fp, self.crc32)
-        # Check for ZIP64 limits before writing
-        if (
+
+        # Check if we need ZIP64 format
+        var needs_zip64 = (
             self.compressed_size > 0xFFFFFFFF
             or self.uncompressed_size > 0xFFFFFFFF
-        ):
-            if not allow_zip64:
+            or self.relative_offset_of_local_header > 0xFFFFFFFF
+        )
+
+        if needs_zip64 and not allow_zip64:
+            if (
+                self.compressed_size > 0xFFFFFFFF
+                or self.uncompressed_size > 0xFFFFFFFF
+            ):
                 raise Error(
                     "File size exceeds 4GB limit and allowZip64 is False"
                 )
-            # ZIP64 format will be used automatically when needed
-        if self.relative_offset_of_local_header > 0xFFFFFFFF:
-            if not allow_zip64:
+            if self.relative_offset_of_local_header > 0xFFFFFFFF:
                 raise Error(
                     "File offset exceeds 4GB limit and allowZip64 is False"
                 )
-            # ZIP64 format will be used automatically when needed
 
-        write_zip_value(fp, UInt32(self.compressed_size))
-        write_zip_value(fp, UInt32(self.uncompressed_size))
+        # Create ZIP64 extra field if needed
+        var extra_field_data = self.extra_field
+        if needs_zip64:
+            # Create ZIP64 extra field
+            var zip64_extra = Zip64ExtendedInformationExtraField(
+                self.uncompressed_size,
+                self.compressed_size,
+                self.relative_offset_of_local_header,
+                0,  # no disk number typically
+            )
+            # For central directory, include fields based on what will be marked as ZIP64
+            var include_original = self.uncompressed_size > 0xFFFFFFFF
+            var include_compressed = self.compressed_size > 0xFFFFFFFF
+            var include_offset = (
+                self.relative_offset_of_local_header > 0xFFFFFFFF
+            )
+            var zip64_data = zip64_extra.create_extra_field_data(
+                include_original, include_compressed, include_offset, False
+            )
+
+            # Append ZIP64 extra field to existing extra fields
+            for byte in zip64_data:
+                extra_field_data.append(byte)
+
+        # Write sizes - use ZIP64 markers only if size exceeds 4GB
+        if self.compressed_size > 0xFFFFFFFF:
+            write_zip_value(fp, UInt32(0xFFFFFFFF))  # compressed size marker
+        else:
+            write_zip_value(fp, UInt32(self.compressed_size))
+
+        if self.uncompressed_size > 0xFFFFFFFF:
+            write_zip_value(fp, UInt32(0xFFFFFFFF))  # uncompressed size marker
+        else:
+            write_zip_value(fp, UInt32(self.uncompressed_size))
+
         write_zip_value(fp, UInt16(len(self.filename)))
-        write_zip_value(fp, UInt16(len(self.extra_field)))
+        write_zip_value(fp, UInt16(len(extra_field_data)))
         write_zip_value(fp, UInt16(len(self.file_comment)))
         write_zip_value(fp, self.disk_number_start)
         write_zip_value(fp, self.internal_file_attributes)
         write_zip_value(fp, self.external_file_attributes)
-        write_zip_value(fp, UInt32(self.relative_offset_of_local_header))
+
+        # Write offset - use ZIP64 marker only if offset exceeds 4GB
+        if self.relative_offset_of_local_header > 0xFFFFFFFF:
+            write_zip_value(fp, UInt32(0xFFFFFFFF))  # offset marker
+        else:
+            write_zip_value(fp, UInt32(self.relative_offset_of_local_header))
+
         write_zip_value(fp, self.filename)
-        write_zip_value(fp, self.extra_field)
+        write_zip_value(fp, extra_field_data)
         write_zip_value(fp, self.file_comment)
         return (
             46
             + len(self.filename)
-            + len(self.extra_field)
+            + len(extra_field_data)
             + len(self.file_comment)
         )
 
@@ -523,27 +595,49 @@ struct EndOfCentralDirectoryRecord(Copyable, Movable):
         write_zip_value(
             fp, self.number_of_the_disk_with_the_start_of_the_central_directory
         )
-        write_zip_value(
-            fp,
-            self.total_number_of_entries_in_the_central_directory_on_this_disk,
-        )
-        write_zip_value(
-            fp, self.total_number_of_entries_in_the_central_directory
-        )
-        # Check for ZIP64 limits before writing
-        if self.size_of_the_central_directory > 0xFFFFFFFF:
-            raise Error(
-                "Central directory size exceeds 4GB limit - ZIP64 format not"
-                " supported yet"
-            )
-        if self.offset_of_starting_disk_number > 0xFFFFFFFF:
-            raise Error(
-                "Central directory offset exceeds 4GB limit - ZIP64 format not"
-                " supported yet"
-            )
 
-        write_zip_value(fp, UInt32(self.size_of_the_central_directory))
-        write_zip_value(fp, UInt32(self.offset_of_starting_disk_number))
+        # Check if we need ZIP64 format
+        var needs_zip64 = (
+            self.size_of_the_central_directory > 0xFFFFFFFF
+            or self.offset_of_starting_disk_number > 0xFFFFFFFF
+            or self.total_number_of_entries_in_the_central_directory > 0xFFFF
+        )
+
+        if needs_zip64 and not allow_zip64:
+            if self.size_of_the_central_directory > 0xFFFFFFFF:
+                raise Error(
+                    "Central directory size exceeds 4GB limit and allowZip64 is"
+                    " False"
+                )
+            if self.offset_of_starting_disk_number > 0xFFFFFFFF:
+                raise Error(
+                    "Central directory offset exceeds 4GB limit and allowZip64"
+                    " is False"
+                )
+            if self.total_number_of_entries_in_the_central_directory > 0xFFFF:
+                raise Error(
+                    "Number of entries exceeds 65535 limit and allowZip64 is"
+                    " False"
+                )
+
+        if needs_zip64:
+            # Write ZIP64 markers in the regular EOCD
+            write_zip_value(fp, UInt16(0xFFFF))  # entries on disk
+            write_zip_value(fp, UInt16(0xFFFF))  # total entries
+            write_zip_value(fp, UInt32(0xFFFFFFFF))  # central directory size
+            write_zip_value(fp, UInt32(0xFFFFFFFF))  # central directory offset
+        else:
+            # Write regular values
+            write_zip_value(
+                fp,
+                self.total_number_of_entries_in_the_central_directory_on_this_disk,
+            )
+            write_zip_value(
+                fp, self.total_number_of_entries_in_the_central_directory
+            )
+            write_zip_value(fp, UInt32(self.size_of_the_central_directory))
+            write_zip_value(fp, UInt32(self.offset_of_starting_disk_number))
+
         write_zip_value(fp, UInt16(len(self.zip_file_comment)))
         write_zip_value(fp, self.zip_file_comment)
         return 22 + len(self.zip_file_comment)
@@ -604,6 +698,61 @@ struct Zip64EndOfCentralDirectoryRecord(Copyable, Movable):
         else:
             self.zip64_extensible_data_sector = List[UInt8]()
 
+    fn __init__(
+        out self,
+        version_made_by: UInt16,
+        version_needed_to_extract: UInt16,
+        number_of_this_disk: UInt32,
+        number_of_the_disk_with_the_start_of_the_central_directory: UInt32,
+        total_number_of_entries_in_the_central_directory_on_this_disk: UInt64,
+        total_number_of_entries_in_the_central_directory: UInt64,
+        size_of_the_central_directory: UInt64,
+        offset_of_starting_disk_number: UInt64,
+        zip64_extensible_data_sector: List[UInt8],
+    ):
+        """Initialize ZIP64 End of Central Directory Record."""
+        # Calculate the size of the record (minimum 44 bytes for fixed fields)
+        self.size_of_zip64_end_of_central_directory_record = 44 + len(
+            zip64_extensible_data_sector
+        )
+        self.version_made_by = version_made_by
+        self.version_needed_to_extract = version_needed_to_extract
+        self.number_of_this_disk = number_of_this_disk
+        self.number_of_the_disk_with_the_start_of_the_central_directory = (
+            number_of_the_disk_with_the_start_of_the_central_directory
+        )
+        self.total_number_of_entries_in_the_central_directory_on_this_disk = (
+            total_number_of_entries_in_the_central_directory_on_this_disk
+        )
+        self.total_number_of_entries_in_the_central_directory = (
+            total_number_of_entries_in_the_central_directory
+        )
+        self.size_of_the_central_directory = size_of_the_central_directory
+        self.offset_of_starting_disk_number = offset_of_starting_disk_number
+        self.zip64_extensible_data_sector = zip64_extensible_data_sector
+
+    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
+        """Write ZIP64 End of Central Directory Record to file."""
+        write_zip_value(fp, self.SIGNATURE)
+        write_zip_value(fp, self.size_of_zip64_end_of_central_directory_record)
+        write_zip_value(fp, self.version_made_by)
+        write_zip_value(fp, self.version_needed_to_extract)
+        write_zip_value(fp, self.number_of_this_disk)
+        write_zip_value(
+            fp, self.number_of_the_disk_with_the_start_of_the_central_directory
+        )
+        write_zip_value(
+            fp,
+            self.total_number_of_entries_in_the_central_directory_on_this_disk,
+        )
+        write_zip_value(
+            fp, self.total_number_of_entries_in_the_central_directory
+        )
+        write_zip_value(fp, self.size_of_the_central_directory)
+        write_zip_value(fp, self.offset_of_starting_disk_number)
+        write_zip_value(fp, self.zip64_extensible_data_sector)
+        return 56 + len(self.zip64_extensible_data_sector)
+
 
 struct Zip64EndOfCentralDirectoryLocator(Copyable, Movable):
     """ZIP64 End of Central Directory Locator structure.
@@ -634,6 +783,33 @@ struct Zip64EndOfCentralDirectoryLocator(Copyable, Movable):
             read_zip_value[DType.uint64](fp)
         )
         self.total_number_of_disks = read_zip_value[DType.uint32](fp)
+
+    fn __init__(
+        out self,
+        number_of_the_disk_with_the_start_of_the_zip64_end_of_central_directory: UInt32,
+        relative_offset_of_the_zip64_end_of_central_directory_record: UInt64,
+        total_number_of_disks: UInt32,
+    ):
+        """Initialize ZIP64 End of Central Directory Locator."""
+        self.number_of_the_disk_with_the_start_of_the_zip64_end_of_central_directory = number_of_the_disk_with_the_start_of_the_zip64_end_of_central_directory
+        self.relative_offset_of_the_zip64_end_of_central_directory_record = (
+            relative_offset_of_the_zip64_end_of_central_directory_record
+        )
+        self.total_number_of_disks = total_number_of_disks
+
+    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
+        """Write ZIP64 End of Central Directory Locator to file."""
+        write_zip_value(fp, self.SIGNATURE)
+        write_zip_value(
+            fp,
+            self.number_of_the_disk_with_the_start_of_the_zip64_end_of_central_directory,
+        )
+        write_zip_value(
+            fp,
+            self.relative_offset_of_the_zip64_end_of_central_directory_record,
+        )
+        write_zip_value(fp, self.total_number_of_disks)
+        return 20
 
 
 struct Zip64ExtendedInformationExtraField(Copyable, Movable):
@@ -722,3 +898,101 @@ struct Zip64ExtendedInformationExtraField(Copyable, Movable):
                 | (UInt32(data[offset + 2]) << 16)
                 | (UInt32(data[offset + 3]) << 24)
             )
+
+    fn __init__(
+        out self,
+        original_size: UInt64,
+        compressed_size: UInt64,
+        relative_header_offset: UInt64,
+        disk_start_number: UInt32,
+    ):
+        """Initialize ZIP64 Extended Information Extra Field."""
+        self.original_size = original_size
+        self.compressed_size = compressed_size
+        self.relative_header_offset = relative_header_offset
+        self.disk_start_number = disk_start_number
+
+    fn write_to_file(self, mut fp: FileHandle) raises -> Int:
+        """Write ZIP64 Extended Information Extra Field to file."""
+        # Header ID (2 bytes)
+        write_zip_value(fp, self.HEADER_ID)
+
+        # Calculate size based on which fields are needed
+        var size = 0
+        var has_sizes = self.original_size != 0 or self.compressed_size != 0
+        var has_offset = self.relative_header_offset != 0
+        var has_disk = self.disk_start_number != 0
+
+        if has_sizes:
+            size += (
+                16  # 8 bytes for original size + 8 bytes for compressed size
+            )
+        if has_offset:
+            size += 8  # 8 bytes for relative header offset
+        if has_disk:
+            size += 4  # 4 bytes for disk start number
+
+        # Write size (2 bytes)
+        write_zip_value(fp, UInt16(size))
+
+        # Write data fields in order
+        if has_sizes:
+            write_zip_value(fp, self.original_size)
+            write_zip_value(fp, self.compressed_size)
+        if has_offset:
+            write_zip_value(fp, self.relative_header_offset)
+        if has_disk:
+            write_zip_value(fp, self.disk_start_number)
+
+        return 4 + size  # 4 bytes for header + size bytes for data
+
+    fn create_extra_field_data(
+        self,
+        include_original_size: Bool,
+        include_compressed_size: Bool,
+        include_offset: Bool,
+        include_disk: Bool,
+    ) raises -> List[UInt8]:
+        """Create extra field data for ZIP64 Extended Information."""
+        var data = List[UInt8]()
+
+        # Header ID (2 bytes, little endian)
+        data.append(UInt8(self.HEADER_ID & 0xFF))
+        data.append(UInt8((self.HEADER_ID >> 8) & 0xFF))
+
+        # Calculate size based on which fields are needed
+        var size = 0
+        if include_original_size:
+            size += 8
+        if include_compressed_size:
+            size += 8
+        if include_offset:
+            size += 8
+        if include_disk:
+            size += 4
+
+        # Size (2 bytes, little endian)
+        data.append(UInt8(size & 0xFF))
+        data.append(UInt8((size >> 8) & 0xFF))
+
+        # Write data fields in ZIP64 spec order
+        if include_original_size:
+            # Original size (8 bytes, little endian)
+            for i in range(8):
+                data.append(UInt8((self.original_size >> (i * 8)) & 0xFF))
+        if include_compressed_size:
+            # Compressed size (8 bytes, little endian)
+            for i in range(8):
+                data.append(UInt8((self.compressed_size >> (i * 8)) & 0xFF))
+        if include_offset:
+            # Relative header offset (8 bytes, little endian)
+            for i in range(8):
+                data.append(
+                    UInt8((self.relative_header_offset >> (i * 8)) & 0xFF)
+                )
+        if include_disk:
+            # Disk start number (4 bytes, little endian)
+            for i in range(4):
+                data.append(UInt8((self.disk_start_number >> (i * 8)) & 0xFF))
+
+        return data

@@ -11,6 +11,7 @@ from .metadata import (
     ZIP_STORED,
     ZIP_DEFLATED,
     GeneralPurposeBitFlag,
+    ZIP64_VERSION,
 )
 from .read_write_values import write_zip_value
 from .zipfile_reader import ZipFileReader
@@ -131,13 +132,15 @@ struct ZipFile:
                         "Number of entries exceeds 65535 limit and allowZip64"
                         " is False"
                     )
-                # ZIP64 format will be used automatically when needed
+
+            # Set values in end of central directory record
             self.end_of_central_directory.total_number_of_entries_in_the_central_directory_on_this_disk = UInt16(
-                num_entries
+                min(num_entries, 0xFFFF)
             )
             self.end_of_central_directory.total_number_of_entries_in_the_central_directory = UInt16(
-                num_entries
+                min(num_entries, 0xFFFF)
             )
+
             current_pos = self.file.seek(0, os.SEEK_CUR)
             if current_pos > 0xFFFFFFFF:
                 if not self.allow_zip64:
@@ -145,7 +148,6 @@ struct ZipFile:
                         "Central directory offset exceeds 4GB limit and"
                         " allowZip64 is False"
                     )
-                # ZIP64 format will be used automatically when needed
             self.end_of_central_directory.offset_of_starting_disk_number = (
                 UInt64(current_pos)
             )
@@ -164,11 +166,49 @@ struct ZipFile:
                         "Central directory size exceeds 4GB limit and"
                         " allowZip64 is False"
                     )
-                # ZIP64 format will be used automatically when needed
             self.end_of_central_directory.size_of_the_central_directory = (
                 central_dir_size
             )
 
+            # Check if we need ZIP64 format
+            var needs_zip64 = (
+                num_entries > 0xFFFF
+                or central_dir_size > 0xFFFFFFFF
+                or self.end_of_central_directory.offset_of_starting_disk_number
+                > 0xFFFFFFFF
+            )
+
+            if needs_zip64:
+                # Write ZIP64 End of Central Directory Record
+                var zip64_eocd_offset = self.file.seek(0, os.SEEK_CUR)
+                var zip64_eocd = Zip64EndOfCentralDirectoryRecord(
+                    version_made_by=ZIP64_VERSION,
+                    version_needed_to_extract=ZIP64_VERSION,
+                    number_of_this_disk=0,
+                    number_of_the_disk_with_the_start_of_the_central_directory=0,
+                    total_number_of_entries_in_the_central_directory_on_this_disk=UInt64(
+                        num_entries
+                    ),
+                    total_number_of_entries_in_the_central_directory=UInt64(
+                        num_entries
+                    ),
+                    size_of_the_central_directory=central_dir_size,
+                    offset_of_starting_disk_number=self.end_of_central_directory.offset_of_starting_disk_number,
+                    zip64_extensible_data_sector=List[UInt8](),
+                )
+                _ = zip64_eocd.write_to_file(self.file)
+
+                # Write ZIP64 End of Central Directory Locator
+                var zip64_locator = Zip64EndOfCentralDirectoryLocator(
+                    number_of_the_disk_with_the_start_of_the_zip64_end_of_central_directory=0,
+                    relative_offset_of_the_zip64_end_of_central_directory_record=UInt64(
+                        zip64_eocd_offset
+                    ),
+                    total_number_of_disks=1,
+                )
+                _ = zip64_locator.write_to_file(self.file)
+
+            # Always write the regular End of Central Directory Record
             _ = self.end_of_central_directory.write_to_file(
                 self.file, self.allow_zip64
             )
