@@ -1,6 +1,7 @@
 from testing import assert_raises, assert_equal, assert_true
 import os
 from zipfile import ZipFile
+from zipfile._src.utils_testing import to_mojo_bytes
 from python import Python
 
 
@@ -201,4 +202,85 @@ def test_read_zip64_large_file():
         if not chunk:
             break
         bytes_seen += len(chunk)
-    assert_true(bytes_seen > 4 * 1024 * 1024 * 1024, "File size should be larger than 4GB")
+    assert_true(
+        bytes_seen > 4 * 1024 * 1024 * 1024,
+        "File size should be larger than 4GB",
+    )
+
+
+def test_write_zip64_large_file_mojo_read_python():
+    file_path = "/tmp/test_write_zip64_large_file_mojo.zip"
+
+    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+
+    # Create a file writer for the large file
+    writer = zip_file.open_to_write("large_file.txt", "w")
+
+    chunk_size = 10 * 1024 * 1024
+    target_size = 4 * 1024 * 1024 * 1024 + 50
+    chunk_data = "B" * chunk_size
+    bytes_written = 0
+
+    while bytes_written < target_size:
+        remaining = target_size - bytes_written
+        if remaining < chunk_size:
+            # Write the remaining bytes
+            writer.write(("B" * remaining).as_bytes())
+            bytes_written += remaining
+        else:
+            # Write a full chunk
+            writer.write(chunk_data.as_bytes())
+            bytes_written += chunk_size
+
+    writer.close()
+    zip_file.close()
+
+    # Now read it back with Python to verify compatibility
+    py_zipfile = Python.import_module("zipfile")
+
+    # Verify the file is readable with Python
+    zf = py_zipfile.ZipFile(file_path, "r")
+    file_list = zf.namelist()
+    assert_equal(len(file_list), 1)
+
+    # Convert Python string to Mojo string for comparison
+    first_filename = String(file_list[0])
+    assert_equal(first_filename, "large_file.txt")
+
+    # Check file info
+    info = zf.getinfo("large_file.txt")
+    file_size = Int(info.file_size)
+    assert_equal(file_size, target_size, "File size should match what we wrote")
+
+    # Verify that we can read the entire file by reading it in chunks
+    # This validates that the ZIP64 file structure is correct
+    f = zf.open("large_file.txt", "r")
+    chunk_size_read = 1024 * 1024  # 1MB chunks for reading
+    total_bytes_read = 0
+
+    while True:
+        chunk = f.read(chunk_size_read)
+        if not chunk:
+            break
+
+        # Convert Python chunk to Mojo bytes to get the length
+        chunk_length = chunk.__len__()
+
+        if chunk_length > 0:
+            if chunk[0] != 66:  # 'B' = 66 in ASCII
+                raise Error("File content is corrupted")
+
+        total_bytes_read += chunk_length
+
+    f.close()
+    zf.close()
+
+    # Verify we read the expected amount
+    assert_equal(
+        total_bytes_read,
+        target_size,
+        "Should have read exactly the amount we wrote",
+    )
+
+    # Clean up
+    _ = os.remove(file_path)
