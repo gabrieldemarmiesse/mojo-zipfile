@@ -284,3 +284,22 @@ def test_write_zip64_large_file_mojo_read_python():
 
     # Clean up
     _ = os.remove(file_path)
+
+
+def test_read_zip64_many_files_in_zip():
+    """Test that allowZip64=False creates files compatible with Python's allowZip64=False.
+    """
+    file_path = "/tmp/test_read_zip64_large_file.zip"
+
+    py_zipfile = Python.import_module("zipfile")
+    py_zip_file_archive = py_zipfile.ZipFile(file_path, "w")
+    for i in range(70_000):
+        filename = String(i) + ".txt"
+        py_zip_file_archive.writestr(filename, "!")
+    py_zip_file_archive.close()
+
+    # now we read it back with Mojo
+    zip_file = ZipFile(file_path, "r")
+    assert_equal(len(zip_file.infolist()), 70_000)
+
+    os.path.remove(file_path)
