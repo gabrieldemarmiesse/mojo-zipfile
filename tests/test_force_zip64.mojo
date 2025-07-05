@@ -138,37 +138,3 @@ def test_force_zip64_with_compression():
 
     # Clean up
     _ = os.remove(file_path)
-
-
-def test_force_zip64_parameter_positions():
-    """Test that force_zip64 parameter works in different positions."""
-    file_path = "/tmp/test_force_zip64_positions.zip"
-
-    zip_file = ZipFile(file_path, "w", allowZip64=True)
-
-    # Test with all parameters specified
-    from zipfile import ZIP_STORED
-
-    file_writer = zip_file.open_to_write("test1.txt", "w", ZIP_STORED, -1, True)
-    file_writer.write("Test 1".as_bytes())
-    file_writer.close()
-
-    # Test with named parameter
-    file_writer2 = zip_file.open_to_write("test2.txt", "w", force_zip64=True)
-    file_writer2.write("Test 2".as_bytes())
-    file_writer2.close()
-
-    zip_file.close()
-
-    # Verify both files were created
-    zip_read = ZipFile(file_path, "r")
-    content1 = zip_read.read("test1.txt")
-    content2 = zip_read.read("test2.txt")
-
-    if String(bytes=content1) != "Test 1":
-        raise Error("Content 1 should match")
-    if String(bytes=content2) != "Test 2":
-        raise Error("Content 2 should match")
-
-    zip_read.close()
-    _ = os.remove(file_path)

@@ -1,7 +1,7 @@
 from testing import assert_raises, assert_equal, assert_true
 import os
 from zipfile import ZipFile
-from zipfile._src.utils_testing import to_mojo_bytes
+from zipfile._src.utils_testing import KB, MB, GB
 from python import Python
 
 
@@ -174,12 +174,12 @@ def test_read_zip64_large_file():
     bytes_seen = 0
 
     while True:
-        var chunk = f.read(1024 * 1024)  # Read in 1MB chunks
+        var chunk = f.read(1 * MB)
         if not chunk:
             break
         bytes_seen += len(chunk)
     assert_true(
-        bytes_seen > 4 * 1024 * 1024 * 1024,
+        bytes_seen > 4 * GB,
         "File size should be larger than 4GB",
     )
 
@@ -192,8 +192,8 @@ def test_write_zip64_large_file_mojo_read_python():
     # Create a file writer for the large file
     writer = zip_file.open_to_write("large_file.txt", "w")
 
-    chunk_size = 10 * 1024 * 1024
-    target_size = 4 * 1024 * 1024 * 1024 + 50
+    chunk_size = 10 * MB
+    target_size = 4 * GB + 50
     chunk_data = "B" * chunk_size
     bytes_written = 0
 
@@ -231,7 +231,7 @@ def test_write_zip64_large_file_mojo_read_python():
     # Verify that we can read the entire file by reading it in chunks
     # This validates that the ZIP64 file structure is correct
     f = zf.open("large_file.txt", "r")
-    chunk_size_read = 1024 * 1024  # 1MB chunks for reading
+    chunk_size_read = 1 * MB
     total_bytes_read = 0
 
     while True:
@@ -270,8 +270,8 @@ def test_write_zip64_large_file_disallow():
     # Create a file writer for the large file
     writer = zip_file.open_to_write("large_file.txt", "w")
 
-    chunk_size = 10 * 1024 * 1024
-    target_size = 4 * 1024 * 1024 * 1024 + 50
+    chunk_size = 10 * MB
+    target_size = 4 * GB + 50
     chunk_data = "B" * chunk_size
     bytes_written = 0
 
@@ -317,7 +317,6 @@ def test_read_zip64_many_files_in_zip():
 
 
 def test_write_zip64_many_files_in_zip():
-    # Same but the other way around
     file_path = "/tmp/test_write_zip64_many_files_in_zip.zip"
     zip_file = ZipFile(file_path, "w")
     for i in range(70_000):
@@ -339,9 +338,8 @@ def test_write_many_files_to_go_over_4GB_limit():
 
     zip_file = ZipFile(file_path, "w", allowZip64=True)
 
-    # Create many files to exceed the 65535 limit
-    num_files = 5000  # This is within the limit, so it should work
-    content = "A" * (1024 * 1024)  # Each file will be 1MB
+    num_files = 5000
+    content = "A" * (1 * MB)
 
     for i in range(num_files):
         filename = "file_" + String(i) + ".txt"
