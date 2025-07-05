@@ -359,3 +359,27 @@ def test_write_many_files_to_go_over_4GB_limit():
         raise Error("File count mismatch")
 
     _ = os.remove(file_path)
+
+
+def test_read_many_files_to_go_over_4GB_limit():
+    file_path = "/tmp/test_read_many_files_to_go_over_4GB_limit.zip"
+
+    py_zipfile = Python.import_module("zipfile")
+    num_files = 5000
+    content = "A" * (1 * MB)
+    zip_file = py_zipfile.ZipFile(file_path, "w")
+
+    for i in range(num_files):
+        filename = "file_" + String(i) + ".txt"
+        zip_file.writestr(filename, content)
+    zip_file.close()
+
+    # now we read it back with Mojo
+    mojo_zip_file = ZipFile(file_path, "r")
+    assert_equal(len(mojo_zip_file.infolist()), 5000)
+
+    # Let's read each file
+    for entry in mojo_zip_file.infolist():
+        f = mojo_zip_file.open_to_read(entry.filename, "r")
+        content_read = f.read()
+        assert_equal(len(content_read), len(content))
