@@ -192,3 +192,73 @@ def test_read_method():
     # Compare results with Python
     assert_equal(String(py_content1.decode("utf-8")), test_data)
     assert_equal(String(py_content2.decode("utf-8")), "Different content")
+
+
+def test_namelist():
+    # Test the namelist() method which should work like Python's zipfile.namelist()
+    test_data = "Test content for namelist test"
+    file_path = "/tmp/test_namelist.zip"
+
+    # Create a zip file with multiple files
+    zip_write = zipfile.ZipFile(file_path, "w")
+    zip_write.writestr("file1.txt", test_data)
+    zip_write.writestr("folder/file2.txt", "Content for file2")
+    zip_write.writestr("folder/subfolder/file3.txt", "Content for file3")
+    zip_write.writestr("another.txt", "Another file content")
+    zip_write.close()
+
+    # Test namelist() method
+    zip_read = zipfile.ZipFile(file_path, "r")
+    names = zip_read.namelist()
+
+    # Check that we got all expected filenames
+    expected_names = [
+        "file1.txt",
+        "folder/file2.txt",
+        "folder/subfolder/file3.txt",
+        "another.txt",
+    ]
+
+    assert_equal(
+        len(names), len(expected_names), "Number of files should match"
+    )
+
+    # Check that all expected names are present
+    for i in range(len(expected_names)):
+        found = False
+        for j in range(len(names)):
+            if names[j] == expected_names[i]:
+                found = True
+                break
+        assert_true(
+            found,
+            "Expected filename " + expected_names[i] + " not found in namelist",
+        )
+
+    zip_read.close()
+
+    # Verify compatibility with Python's zipfile
+    Python.add_to_path("./tests")
+    py_zipfile = Python.import_module("zipfile")
+    py_zip = py_zipfile.ZipFile(file_path, "r")
+    py_names = py_zip.namelist()
+    py_zip.close()
+
+    # Compare results with Python
+    assert_equal(
+        len(names),
+        len(py_names),
+        "Number of files should match Python's implementation",
+    )
+
+    # Check that all Python names are present in our implementation
+    for i in range(len(py_names)):
+        py_name = String(py_names[i])
+        found = False
+        for j in range(len(names)):
+            if names[j] == py_name:
+                found = True
+                break
+        assert_true(
+            found, "Python filename " + py_name + " not found in our namelist"
+        )

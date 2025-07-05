@@ -99,14 +99,14 @@ The library provides a subset of Python's zipfile API. See `src/zipfile/__init__
 
 - **Core Classes**: `ZipFile`, `ZipInfo`, `is_zipfile()` function
 - **Compression Constants**: `ZIP_STORED`, `ZIP_DEFLATED`
-- **ZipFile Methods**: `close()`, `getinfo()`, `infolist()`, `open_to_read()`, `open_to_write()`, `read()`, `writestr()`
+- **ZipFile Methods**: `close()`, `getinfo()`, `infolist()`, `namelist()`, `open_to_read()`, `open_to_write()`, `read()`, `writestr()`
 - **ZipInfo Methods**: `is_dir()`, `filename` property
 - **ZIP64 Support**: Full ZIP64 support with `allowZip64` parameter
 - **Compression Levels**: Full support for compression levels 0-9 with ZIP_DEFLATED
 
 ### Not Yet Implemented Features
 
-- **ZipFile Methods**: `namelist()`, `extract()`, `extractall()`, `printdir()`, `setpassword()`, `testzip()`, `write()`, `mkdir()`
+- **ZipFile Methods**: `extract()`, `extractall()`, `printdir()`, `setpassword()`, `testzip()`, `write()`, `mkdir()`
 - **ZipFile Properties**: `filename`, `debug`, `comment`
 - **ZipInfo Properties**: `date_time`, `compress_type`, `comment`, `extra`, `CRC`, `compress_size`, `file_size`, etc.
 - **ZipInfo Methods**: `from_file()` constructor

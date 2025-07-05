@@ -336,6 +336,18 @@ struct ZipFile:
             result.append(ZipInfo(header.value()))
         return result
 
+    fn namelist(mut self) raises -> List[String]:
+        """Return a list of filenames in the archive."""
+        self._start_reading_central_directory_file_headers()
+
+        result = List[String]()
+        while True:
+            header = self._read_next_central_directory_file_header()
+            if header is None:
+                break
+            result.append(String(bytes=header.value().filename))
+        return result
+
     fn _try_read_zip64_records(mut self) raises:
         """Try to read ZIP64 end of central directory records."""
         # Look for ZIP64 end of central directory locator
