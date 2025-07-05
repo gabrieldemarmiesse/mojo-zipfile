@@ -5,57 +5,57 @@ from zipfile._src.utils_testing import to_mojo_bytes
 from python import Python
 
 
-def test_allow_zip64_default_true():
+def test_allowZip64_default_true():
     """Test that allowZip64 defaults to True."""
-    file_path = "/tmp/test_allow_zip64_default.zip"
+    file_path = "/tmp/test_allowZip64_default.zip"
 
     # Create a ZipFile without specifying allowZip64 (should default to True)
     zip_file = ZipFile(file_path, "w")
 
     # Verify the default value
-    if not zip_file.allow_zip64:
+    if not zip_file.allowZip64:
         raise Error("allowZip64 should default to True")
 
     zip_file.close()
     _ = os.remove(file_path)
 
 
-def test_allow_zip64_explicit_true():
+def test_allowZip64_explicit_true():
     """Test that allowZip64 can be explicitly set to True."""
-    file_path = "/tmp/test_allow_zip64_explicit_true.zip"
+    file_path = "/tmp/test_allowZip64_explicit_true.zip"
 
     # Create a ZipFile with allowZip64=True
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Verify the value
-    if not zip_file.allow_zip64:
+    if not zip_file.allowZip64:
         raise Error("allowZip64 should be True when explicitly set")
 
     zip_file.close()
     _ = os.remove(file_path)
 
 
-def test_allow_zip64_explicit_false():
+def test_allowZip64_explicit_false():
     """Test that allowZip64 can be explicitly set to False."""
-    file_path = "/tmp/test_allow_zip64_explicit_false.zip"
+    file_path = "/tmp/test_allowZip64_explicit_false.zip"
 
     # Create a ZipFile with allowZip64=False
-    zip_file = ZipFile(file_path, "w", allow_zip64=False)
+    zip_file = ZipFile(file_path, "w", allowZip64=False)
 
     # Verify the value
-    if zip_file.allow_zip64:
+    if zip_file.allowZip64:
         raise Error("allowZip64 should be False when explicitly set")
 
     zip_file.close()
     _ = os.remove(file_path)
 
 
-def test_allow_zip64_false_rejects_large_content():
+def test_allowZip64_false_rejects_large_content():
     """Test that allowZip64=False rejects large content."""
-    file_path = "/tmp/test_allow_zip64_false_rejects_large_content.zip"
+    file_path = "/tmp/test_allowZip64_false_rejects_large_content.zip"
 
     # Create a ZipFile with allowZip64=False
-    zip_file = ZipFile(file_path, "w", allow_zip64=False)
+    zip_file = ZipFile(file_path, "w", allowZip64=False)
 
     # Try to write a large file that would require ZIP64
     # Create 5GB worth of data (larger than 4GB limit)
@@ -70,12 +70,12 @@ def test_allow_zip64_false_rejects_large_content():
     _ = os.remove(file_path)
 
 
-def test_allow_zip64_false_rejects_many_files():
+def test_allowZip64_false_rejects_many_files():
     """Test that allowZip64=False rejects too many files."""
-    file_path = "/tmp/test_allow_zip64_false_rejects_many_files.zip"
+    file_path = "/tmp/test_allowZip64_false_rejects_many_files.zip"
 
     # Create a ZipFile with allowZip64=False
-    zip_file = ZipFile(file_path, "w", allow_zip64=False)
+    zip_file = ZipFile(file_path, "w", allowZip64=False)
 
     # Create many files to exceed the 65535 limit
     # For testing, we'll create fewer files since 65535+ would be slow
@@ -103,18 +103,18 @@ def test_allow_zip64_false_rejects_many_files():
     _ = os.remove(file_path)
 
 
-def test_allow_zip64_read_mode():
+def test_allowZip64_read_mode():
     """Test that allowZip64 works correctly in read mode."""
-    file_path = "/tmp/test_allow_zip64_read_mode.zip"
+    file_path = "/tmp/test_allowZip64_read_mode.zip"
 
     # First create a test ZIP file
-    zip_write = ZipFile(file_path, "w", allow_zip64=True)
+    zip_write = ZipFile(file_path, "w", allowZip64=True)
     zip_write.writestr("test.txt", "Hello, ZIP64!")
     zip_write.close()
 
     # Open in read mode with allowZip64=False (should still work for reading)
-    zip_read_false = ZipFile(file_path, "r", allow_zip64=False)
-    if zip_read_false.allow_zip64:
+    zip_read_false = ZipFile(file_path, "r", allowZip64=False)
+    if zip_read_false.allowZip64:
         raise Error(
             "allowZip64 should be False when explicitly set in read mode"
         )
@@ -129,8 +129,8 @@ def test_allow_zip64_read_mode():
     zip_read_false.close()
 
     # Open in read mode with allowZip64=True
-    zip_read_true = ZipFile(file_path, "r", allow_zip64=True)
-    if not zip_read_true.allow_zip64:
+    zip_read_true = ZipFile(file_path, "r", allowZip64=True)
+    if not zip_read_true.allowZip64:
         raise Error(
             "allowZip64 should be True when explicitly set in read mode"
         )
@@ -141,13 +141,13 @@ def test_allow_zip64_read_mode():
     _ = os.remove(file_path)
 
 
-def test_allow_zip64_false_integration_with_python():
+def test_allowZip64_false_integration_with_python():
     """Test that allowZip64=False creates files compatible with Python's allowZip64=False.
     """
-    file_path = "/tmp/test_allow_zip64_false_integration_with_python.zip"
+    file_path = "/tmp/test_allowZip64_false_integration_with_python.zip"
 
     # Create a file with Mojo's allowZip64=False
-    zip_file = ZipFile(file_path, "w", allow_zip64=False)
+    zip_file = ZipFile(file_path, "w", allowZip64=False)
     zip_file.writestr("test.txt", "Hello from Mojo with allowZip64=False!")
     zip_file.close()
 
@@ -211,7 +211,7 @@ def test_read_zip64_large_file():
 def test_write_zip64_large_file_mojo_read_python():
     file_path = "/tmp/test_write_zip64_large_file_mojo_read_python.zip"
 
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Create a file writer for the large file
     writer = zip_file.open_to_write("large_file.txt", "w")
@@ -289,7 +289,7 @@ def test_write_zip64_large_file_mojo_read_python():
 def test_write_zip64_large_file_disallow():
     file_path = "/tmp/test_write_zip64_large_file_disallow.zip"
 
-    zip_file = ZipFile(file_path, "w", allow_zip64=False)
+    zip_file = ZipFile(file_path, "w", allowZip64=False)
 
     # Create a file writer for the large file
     writer = zip_file.open_to_write("large_file.txt", "w")

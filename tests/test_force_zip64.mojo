@@ -9,7 +9,7 @@ def test_force_zip64_default_false():
     file_path = "/tmp/test_force_zip64_default.zip"
 
     # Create a ZipFile and open a file for writing without specifying force_zip64
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
     file_writer = zip_file.open_to_write("test.txt", "w")
 
     # Check the default value
@@ -27,7 +27,7 @@ def test_force_zip64_explicit_true():
     file_path = "/tmp/test_force_zip64_true.zip"
 
     # Create a ZipFile and open a file for writing with force_zip64=True
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
     file_writer = zip_file.open_to_write("test.txt", "w", force_zip64=True)
 
     # Check the value
@@ -45,7 +45,7 @@ def test_force_zip64_explicit_false():
     file_path = "/tmp/test_force_zip64_false.zip"
 
     # Create a ZipFile and open a file for writing with force_zip64=False
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
     file_writer = zip_file.open_to_write("test.txt", "w", force_zip64=False)
 
     # Check the value
@@ -58,12 +58,12 @@ def test_force_zip64_explicit_false():
     _ = os.remove(file_path)
 
 
-def test_force_zip64_true_with_allow_zip64_false_fails():
+def test_force_zip64_true_with_allowZip64_false_fails():
     """Test that force_zip64=True with allowZip64=False raises an error."""
     file_path = "/tmp/test_force_zip64_conflict.zip"
 
     # Create a ZipFile with allowZip64=False
-    zip_file = ZipFile(file_path, "w", allow_zip64=False)
+    zip_file = ZipFile(file_path, "w", allowZip64=False)
 
     # Try to open a file with force_zip64=True - this should fail when closing
     file_writer = zip_file.open_to_write("test.txt", "w", force_zip64=True)
@@ -83,7 +83,7 @@ def test_force_zip64_with_small_file():
     file_path = "/tmp/test_force_zip64_small.zip"
 
     # Create a ZipFile with allowZip64=True
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Open a file with force_zip64=True and write small content
     file_writer = zip_file.open_to_write("small.txt", "w", force_zip64=True)
@@ -116,7 +116,7 @@ def test_force_zip64_with_compression():
     file_path = "/tmp/test_force_zip64_compression.zip"
 
     # Test with ZIP_DEFLATED compression
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Open a file with force_zip64=True and DEFLATED compression
     from zipfile import ZIP_DEFLATED
@@ -144,7 +144,7 @@ def test_force_zip64_parameter_positions():
     """Test that force_zip64 parameter works in different positions."""
     file_path = "/tmp/test_force_zip64_positions.zip"
 
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Test with all parameters specified
     from zipfile import ZIP_STORED

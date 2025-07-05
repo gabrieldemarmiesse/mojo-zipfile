@@ -9,7 +9,7 @@ def test_write_zip64_moderate_file():
     file_path = "/tmp/zip64_write_moderate_test.zip"
 
     # Create ZIP64 file using Mojo zipfile with allowZip64=True
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Create 10MB of test data
     pattern = "ZIP64 test data pattern - " * 100  # About 2.5KB pattern
@@ -59,7 +59,7 @@ def test_write_zip64_many_files():
     file_path = "/tmp/zip64_write_many_files_test.zip"
 
     # Create ZIP64 file with many entries using Mojo zipfile with allowZip64=True
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Create 1000 files for testing
     num_files = 1000
@@ -94,7 +94,7 @@ def test_write_zip64_streaming():
     file_path = "/tmp/zip64_write_streaming_test.zip"
 
     # Create ZIP64 file using streaming writes with allowZip64=True
-    zip_file = ZipFile(file_path, "w", allow_zip64=True)
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Open a file for streaming write with force_zip64=True
     file_writer = zip_file.open_to_write(

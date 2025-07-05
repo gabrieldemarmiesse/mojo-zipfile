@@ -42,18 +42,18 @@ struct ZipFile:
     var zip64_end_of_central_directory: Optional[
         Zip64EndOfCentralDirectoryRecord
     ]
-    var allow_zip64: Bool
+    var allowZip64: Bool
 
     fn __init__[
         FileNameType: PathLike
     ](
-        out self, filename: FileNameType, mode: String, allow_zip64: Bool = True
+        out self, filename: FileNameType, mode: String, allowZip64: Bool = True
     ) raises:
         self.file = open(filename, mode)
         if mode not in String("r", "w"):
             raise Error("Only read and write modes are suported")
         self.mode = mode
-        self.allow_zip64 = allow_zip64
+        self.allowZip64 = allowZip64
         self.central_directory_files_headers = List[
             CentralDirectoryFileHeader
         ]()
@@ -104,7 +104,7 @@ struct ZipFile:
     fn __moveinit__(out self, owned existing: Self):
         self.file = existing.file^
         self.mode = existing.mode
-        self.allow_zip64 = existing.allow_zip64
+        self.allowZip64 = existing.allowZip64
         self.end_of_central_directory_start = (
             existing.end_of_central_directory_start
         )
@@ -127,7 +127,7 @@ struct ZipFile:
         if self.mode == "w":
             num_entries = len(self.central_directory_files_headers)
             if num_entries > 0xFFFF:
-                if not self.allow_zip64:
+                if not self.allowZip64:
                     raise Error(
                         "Number of entries exceeds 65535 limit and allowZip64"
                         " is False"
@@ -143,7 +143,7 @@ struct ZipFile:
 
             current_pos = self.file.seek(0, os.SEEK_CUR)
             if current_pos > 0xFFFFFFFF:
-                if not self.allow_zip64:
+                if not self.allowZip64:
                     raise Error(
                         "Central directory offset exceeds 4GB limit and"
                         " allowZip64 is False"
@@ -153,7 +153,7 @@ struct ZipFile:
             )
 
             for header in self.central_directory_files_headers:
-                _ = header.write_to_file(self.file, self.allow_zip64)
+                _ = header.write_to_file(self.file, self.allowZip64)
 
             current_pos = self.file.seek(0, os.SEEK_CUR)
             central_dir_size = (
@@ -161,7 +161,7 @@ struct ZipFile:
                 - self.end_of_central_directory.offset_of_starting_disk_number
             )
             if central_dir_size > 0xFFFFFFFF:
-                if not self.allow_zip64:
+                if not self.allowZip64:
                     raise Error(
                         "Central directory size exceeds 4GB limit and"
                         " allowZip64 is False"
@@ -210,7 +210,7 @@ struct ZipFile:
 
             # Always write the regular End of Central Directory Record
             _ = self.end_of_central_directory.write_to_file(
-                self.file, self.allow_zip64
+                self.file, self.allowZip64
             )
         self.file.close()
 

@@ -55,7 +55,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         self._header_offset = self.zipfile[].file.seek(0, os.SEEK_CUR)
         self.crc32_position = self._header_offset + 14
         _ = self.local_file_header.write_to_file(
-            self.zipfile[].file, self.zipfile[].allow_zip64
+            self.zipfile[].file, self.zipfile[].allowZip64
         )
         self.open = True
         self._uncompressed_buffer = List[UInt8]()
@@ -117,7 +117,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         )
 
         if needs_zip64:
-            if not self.zipfile[].allow_zip64:
+            if not self.zipfile[].allowZip64:
                 if self._force_zip64:
                     self.open = (
                         False  # Prevent destructor from trying to close again
@@ -147,7 +147,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         _ = self.zipfile[].file.seek(old_position)
         # Create central directory entry with correct header offset
         if self._header_offset > 0xFFFFFFFF or self._force_zip64:
-            if not self.zipfile[].allow_zip64:
+            if not self.zipfile[].allowZip64:
                 if self._force_zip64:
                     self.open = (
                         False  # Prevent destructor from trying to close again

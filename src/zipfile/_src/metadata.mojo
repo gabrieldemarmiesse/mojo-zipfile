@@ -194,7 +194,7 @@ struct LocalFileHeader(Copyable, Movable):
             offset += 4 + Int(size)
 
     fn write_to_file(
-        self, mut fp: FileHandle, allow_zip64: Bool = True
+        self, mut fp: FileHandle, allowZip64: Bool = True
     ) raises -> Int:
         # We write the fixed size part of the header
         write_zip_value(fp, self.SIGNATURE)
@@ -211,7 +211,7 @@ struct LocalFileHeader(Copyable, Movable):
             or self.uncompressed_size > 0xFFFFFFFF
         )
 
-        if needs_zip64 and not allow_zip64:
+        if needs_zip64 and not allowZip64:
             raise Error("File size exceeds 4GB limit and allowZip64 is False")
 
         # Create ZIP64 extra field if needed
@@ -435,7 +435,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
             offset += 4 + Int(size)
 
     fn write_to_file(
-        self, mut fp: FileHandle, allow_zip64: Bool = True
+        self, mut fp: FileHandle, allowZip64: Bool = True
     ) raises -> Int:
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.version_made_by)
@@ -453,7 +453,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
             or self.relative_offset_of_local_header > 0xFFFFFFFF
         )
 
-        if needs_zip64 and not allow_zip64:
+        if needs_zip64 and not allowZip64:
             if (
                 self.compressed_size > 0xFFFFFFFF
                 or self.uncompressed_size > 0xFFFFFFFF
@@ -588,7 +588,7 @@ struct EndOfCentralDirectoryRecord(Copyable, Movable):
         self.zip_file_comment = fp.read_bytes(Int(zip_file_comment_length))
 
     fn write_to_file(
-        self, mut fp: FileHandle, allow_zip64: Bool = True
+        self, mut fp: FileHandle, allowZip64: Bool = True
     ) raises -> Int:
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.number_of_this_disk)
@@ -603,7 +603,7 @@ struct EndOfCentralDirectoryRecord(Copyable, Movable):
             or self.total_number_of_entries_in_the_central_directory > 0xFFFF
         )
 
-        if needs_zip64 and not allow_zip64:
+        if needs_zip64 and not allowZip64:
             if self.size_of_the_central_directory > 0xFFFFFFFF:
                 raise Error(
                     "Central directory size exceeds 4GB limit and allowZip64 is"
