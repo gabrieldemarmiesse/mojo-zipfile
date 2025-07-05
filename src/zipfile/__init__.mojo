@@ -12,7 +12,7 @@ from ._src.zipinfo import ZipInfo
 # ZipFile.close()
 # ZipFile.getinfo(name)
 # ZipFile.infolist()
-# (Not implemented) ZipFile.namelist()
+# ZipFile.namelist()
 # (Partially implemented) ZipFile.open_to_read(name, mode='r', pwd=None, *, force_zip64=False)
 # (Partially implemented) ZipFile.open_to_write(name, mode='w', pwd=None, *, force_zip64=False)
 # (Not implemented) ZipFile.extract(member, path=None, pwd=None)
