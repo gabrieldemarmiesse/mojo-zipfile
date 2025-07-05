@@ -50,35 +50,12 @@ def test_allowZip64_explicit_false():
     _ = os.remove(file_path)
 
 
-def test_allowZip64_false_rejects_large_content():
-    """Test that allowZip64=False rejects large content."""
-    file_path = "/tmp/test_allowZip64_false_rejects_large_content.zip"
-
-    # Create a ZipFile with allowZip64=False
-    zip_file = ZipFile(file_path, "w", allowZip64=False)
-
-    # Try to write a large file that would require ZIP64
-    # Create 5GB worth of data (larger than 4GB limit)
-    # For testing, we'll simulate by creating data that compresses small but has large uncompressed size
-    large_data = "A" * (5 * 1024 * 1024)  # 5MB of repeated 'A' characters
-
-    # This should work since the actual content is small
-    zip_file.writestr("large_file.txt", large_data)
-    zip_file.close()
-
-    # Clean up
-    _ = os.remove(file_path)
-
-
-def test_allowZip64_false_rejects_many_files():
+def test_allowZip64_false_can_write_small_zip():
     """Test that allowZip64=False rejects too many files."""
-    file_path = "/tmp/test_allowZip64_false_rejects_many_files.zip"
+    file_path = "/tmp/test_allowZip64_false_can_write_small_zip.zip"
 
-    # Create a ZipFile with allowZip64=False
     zip_file = ZipFile(file_path, "w", allowZip64=False)
 
-    # Create many files to exceed the 65535 limit
-    # For testing, we'll create fewer files since 65535+ would be slow
     num_files = 1000  # This is within the limit, so it should work
 
     for i in range(num_files):
@@ -99,7 +76,6 @@ def test_allowZip64_false_rejects_many_files():
     if validation_info["file_count"] != num_files:
         raise Error("File count mismatch")
 
-    # Clean up
     _ = os.remove(file_path)
 
 
@@ -356,3 +332,32 @@ def test_write_zip64_many_files_in_zip():
     py_zip_file_archive.close()
 
     os.path.remove(file_path)
+
+
+def test_write_many_files_to_go_over_4GB_limit():
+    file_path = "/tmp/test_write_many_files_to_go_over_4GB_limit.zip"
+
+    zip_file = ZipFile(file_path, "w", allowZip64=True)
+
+    # Create many files to exceed the 65535 limit
+    num_files = 5000  # This is within the limit, so it should work
+    content = "A" * (1024 * 1024)  # Each file will be 1MB
+
+    for i in range(num_files):
+        filename = "file_" + String(i) + ".txt"
+        zip_file.writestr(filename, content)
+
+    zip_file.close()
+
+    # Verify with Python that the file was created correctly
+    Python.add_to_path("./tests")
+    tests_helper = Python.import_module("tests_helper")
+    validation_info = tests_helper.validate_zip64_file_general(file_path)
+
+    if not validation_info["is_valid"]:
+        raise Error("ZIP file should be valid")
+
+    if validation_info["file_count"] != num_files:
+        raise Error("File count mismatch")
+
+    _ = os.remove(file_path)

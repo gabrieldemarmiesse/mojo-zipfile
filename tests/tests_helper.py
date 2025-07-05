@@ -187,6 +187,14 @@ def validate_zip64_file_general(path: str) -> dict:
                     break
             else:
                 info["uses_zip64"] = False
+
+            # let's read all files chunk by chunk to be sure it works
+            for file_info in zf.infolist():
+                with zf.open(file_info.filename) as f:
+                    while True:
+                        chunk = f.read(1024 * 1024 * 10)
+                        if not chunk:
+                            break
             
             return info
     except Exception as e:
