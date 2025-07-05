@@ -15,6 +15,11 @@ pixi run test
 
 **Note**: The `pixi run test` command runs the complete test suite (all 94+ tests). When this command succeeds, it means all functionality is working correctly. There is no need to run individual test files separately unless debugging a specific issue.
 
+Run an individual test function with:
+```bash
+pixi run mojo test -I ./src "tests/test_zip64_limits.mojo::test_zip64_number_of_entries_limit()"
+```
+
 ## Architecture
 
 ### Core Components
@@ -201,3 +206,6 @@ def test_specific_error():
 **Important**: Use `assert_raises()` as a context manager with `with` statement, not as a function call with lambda. The context manager pattern is the correct and idiomatic way to test exceptions in Mojo.
 
 The documentation for the zlib module can be found at https://raw.githubusercontent.com/gabrieldemarmiesse/mojo-zlib/refs/heads/main/README.md . Don't hesistate to look it up.
+
+Spec for zipfiles: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT, use it too when in doubt.
+

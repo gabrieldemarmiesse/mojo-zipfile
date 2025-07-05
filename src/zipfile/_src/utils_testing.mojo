@@ -1,5 +1,9 @@
 from python import PythonObject, Python
 
+alias KB = 1024
+alias MB = 1024 * KB
+alias GB = 1024 * MB
+
 
 def to_py_bytes(data: String) -> PythonObject:
     return to_py_bytes(data.as_bytes())
