@@ -4,28 +4,29 @@ from ._src.zipfile import ZipFile
 from ._src.zipfile import is_zipfile
 from ._src.metadata import ZIP_STORED
 from ._src.metadata import ZIP_DEFLATED
+from ._src.zipinfo import ZipInfo
 
-# ZIP_BZIP2
-# ZIP_LZMA
-# ZipFile(file, mode='r', compression=ZIP_STORED, allowZip64=True, compresslevel=None, *, strict_timestamps=True, metadata_encoding=None)
+# (Not implemented) ZIP_BZIP2
+# (Not implemented) ZIP_LZMA
+# (Partially implemented) ZipFile(file, mode='r', compression=ZIP_STORED, allowZip64=True, compresslevel=None, *, strict_timestamps=True, metadata_encoding=None)
 # ZipFile.close()
 # ZipFile.getinfo(name)
 # ZipFile.infolist()
 # (Not implemented) ZipFile.namelist()
 # (Partially implemented) ZipFile.open_to_read(name, mode='r', pwd=None, *, force_zip64=False)
 # (Partially implemented) ZipFile.open_to_write(name, mode='w', pwd=None, *, force_zip64=False)
-# ZipFile.extract(member, path=None, pwd=None)
-# ZipFile.extractall(path=None, members=None, pwd=None)
-# ZipFile.printdir()
-# ZipFile.setpassword(pwd)
+# (Not implemented) ZipFile.extract(member, path=None, pwd=None)
+# (Not implemented) ZipFile.extractall(path=None, members=None, pwd=None)
+# (Not implemented) ZipFile.printdir()
+# (Not implemented) ZipFile.setpassword(pwd)
 # ZipFile.read(name, pwd=None)
-# ZipFile.testzip()
-# ZipFile.write(filename, arcname=None, compress_type=None, compresslevel=None)
-# ZipFile.writestr(zinfo_or_arcname, data, compress_type=None, compresslevel=None)
-# ZipFile.mkdir(zinfo_or_directory, mode=511)
-# ZipFile.filename
-# ZipFile.debug
-# ZipFile.comment
+# (Not implemented) ZipFile.testzip()
+# (Not implemented) ZipFile.write(filename, arcname=None, compress_type=None, compresslevel=None)
+# (Partially implemented) ZipFile.writestr(zinfo_or_arcname, data, compress_type=None, compresslevel=None)
+# (Not implemented) ZipFile.mkdir(zinfo_or_directory, mode=511)
+# (Not implemented) ZipFile.filename
+# (Not implemented) ZipFile.debug
+# (Not implemented) ZipFile.comment
 # (Not implemented) Path(root, at='')
 # (Not implemented) Path.name
 # (Not implemented) Path.open(mode='r', *, pwd, **)
@@ -42,23 +43,23 @@ from ._src.metadata import ZIP_DEFLATED
 # (Not implemented) Path.joinpath(*other)
 # (Not implemented) PyZipFile(file, mode='r', compression=ZIP_STORED, allowZip64=True, optimize=-1)
 # (Not implemented) PyZipFile.writepy(pathname, basename='', filterfunc=None)
-# ZipInfo(filename='NoName', date_time=(1980, 1, 1, 0, 0, 0))
-# ZipInfo.from_file(filename, arcname=None, *, strict_timestamps=True)
+# (Not implemented) ZipInfo(filename='NoName', date_time=(1980, 1, 1, 0, 0, 0))
+# (Not implemented) ZipInfo.from_file(filename, arcname=None, *, strict_timestamps=True)
 # ZipInfo.is_dir()
 # ZipInfo.filename
-# ZipInfo.date_time
-# ZipInfo.compress_type
-# ZipInfo.comment
-# ZipInfo.extra
-# ZipInfo.create_system
-# ZipInfo.create_version
-# ZipInfo.extract_version
-# ZipInfo.reserved
-# ZipInfo.flag_bits
-# ZipInfo.volume
-# ZipInfo.internal_attr
-# ZipInfo.external_attr
-# ZipInfo.header_offset
-# ZipInfo.CRC
-# ZipInfo.compress_size
-# ZipInfo.file_size
+# (Not implemented) ZipInfo.date_time
+# (Not implemented) ZipInfo.compress_type
+# (Not implemented) ZipInfo.comment
+# (Not implemented) ZipInfo.extra
+# (Not implemented) ZipInfo.create_system
+# (Not implemented) ZipInfo.create_version
+# (Not implemented) ZipInfo.extract_version
+# (Not implemented) ZipInfo.reserved
+# (Not implemented) ZipInfo.flag_bits
+# (Not implemented) ZipInfo.volume
+# (Not implemented) ZipInfo.internal_attr
+# (Not implemented) ZipInfo.external_attr
+# (Not implemented) ZipInfo.header_offset
+# (Not implemented) ZipInfo.CRC
+# (Not implemented) ZipInfo.compress_size
+# (Not implemented) ZipInfo.file_size
