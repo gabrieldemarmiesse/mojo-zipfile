@@ -65,7 +65,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
             if self._remaining_size() == 0:
                 # We are at the end of the file
                 self._check_crc32()
-            return bytes
+            return bytes^
         elif self.compression == ZIP_DEFLATED:
             return self._read_deflated(size)
         else:
