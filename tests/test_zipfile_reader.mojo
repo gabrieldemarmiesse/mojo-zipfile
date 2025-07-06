@@ -17,10 +17,10 @@ def test_streaming_large_file_small_chunks():
     file_path = "/tmp/large_streaming_test.zip"
 
     # Create a zip file with large deflated content
-    zip_write = zipfile.ZipFile(file_path, "w")
-    zip_write.writestr(
-        "large.txt", large_data, zipfile.ZIP_DEFLATED, compresslevel=6
+    zip_write = zipfile.ZipFile(
+        file_path, "w", zipfile.ZIP_DEFLATED, compresslevel=Int32(6)
     )
+    zip_write.writestr("large.txt", large_data)
     zip_write.close()
 
     # Test reading in very small chunks (much smaller than buffer sizes)
@@ -73,10 +73,10 @@ def test_streaming_large_file_large_chunks():
     file_path = "/tmp/large_chunk_test.zip"
 
     # Create zip with large content
-    zip_write = zipfile.ZipFile(file_path, "w")
-    zip_write.writestr(
-        "huge.txt", large_data, zipfile.ZIP_DEFLATED, compresslevel=9
+    zip_write = zipfile.ZipFile(
+        file_path, "w", zipfile.ZIP_DEFLATED, compresslevel=Int32(9)
     )
+    zip_write.writestr("huge.txt", large_data)
     zip_write.close()
 
     # Test reading in chunks larger than internal buffers (> 64KB)
@@ -140,10 +140,10 @@ def test_streaming_entire_large_file():
     file_path = "/tmp/entire_large_test.zip"
 
     # Create zip with very large content
-    zip_write = zipfile.ZipFile(file_path, "w")
-    zip_write.writestr(
-        "massive.txt", large_data, zipfile.ZIP_DEFLATED, compresslevel=6
+    zip_write = zipfile.ZipFile(
+        file_path, "w", zipfile.ZIP_DEFLATED, compresslevel=Int32(6)
     )
+    zip_write.writestr("massive.txt", large_data)
     zip_write.close()
 
     # Test reading entire file at once (size=-1)
@@ -181,10 +181,10 @@ def test_mixed_read_patterns_large_file():
     file_path = "/tmp/mixed_pattern_test.zip"
 
     # Create zip file
-    zip_write = zipfile.ZipFile(file_path, "w")
-    zip_write.writestr(
-        "mixed.txt", large_data, zipfile.ZIP_DEFLATED, compresslevel=6
+    zip_write = zipfile.ZipFile(
+        file_path, "w", zipfile.ZIP_DEFLATED, compresslevel=Int32(6)
     )
+    zip_write.writestr("mixed.txt", large_data)
     zip_write.close()
 
     # Test mixed reading patterns
@@ -233,16 +233,12 @@ def test_streaming_multiple_large_files():
     file_path = "/tmp/multiple_large_test.zip"
 
     # Create zip with multiple large files
-    zip_write = zipfile.ZipFile(file_path, "w")
-    zip_write.writestr(
-        "file1.txt", data1, zipfile.ZIP_DEFLATED, compresslevel=6
+    zip_write = zipfile.ZipFile(
+        file_path, "w", zipfile.ZIP_DEFLATED, compresslevel=Int32(6)
     )
-    zip_write.writestr(
-        "file2.txt", data2, zipfile.ZIP_DEFLATED, compresslevel=6
-    )
-    zip_write.writestr(
-        "file3.txt", data3, zipfile.ZIP_DEFLATED, compresslevel=6
-    )
+    zip_write.writestr("file1.txt", data1)
+    zip_write.writestr("file2.txt", data2)
+    zip_write.writestr("file3.txt", data3)
     zip_write.close()
 
     # Test reading all files with different patterns

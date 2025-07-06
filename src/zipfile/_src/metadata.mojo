@@ -76,7 +76,7 @@ struct LocalFileHeader(Copyable, Movable):
 
     var version_needed_to_extract: UInt16
     var general_purpose_bit_flag: GeneralPurposeBitFlag
-    var compression_method: UInt16
+    var compression: UInt16
     var last_mod_file_time: UInt16
     var last_mod_file_date: UInt16
     var crc32: UInt32
@@ -89,7 +89,7 @@ struct LocalFileHeader(Copyable, Movable):
         out self,
         version_needed_to_extract: UInt16,
         general_purpose_bit_flag: GeneralPurposeBitFlag,
-        compression_method: UInt16,
+        compression: UInt16,
         last_mod_file_time: UInt16,
         last_mod_file_date: UInt16,
         crc32: UInt32,
@@ -100,7 +100,7 @@ struct LocalFileHeader(Copyable, Movable):
     ):
         self.version_needed_to_extract = version_needed_to_extract
         self.general_purpose_bit_flag = general_purpose_bit_flag
-        self.compression_method = compression_method
+        self.compression = compression
         self.last_mod_file_time = last_mod_file_time
         self.last_mod_file_date = last_mod_file_date
         self.crc32 = crc32
@@ -119,7 +119,7 @@ struct LocalFileHeader(Copyable, Movable):
         self.general_purpose_bit_flag = GeneralPurposeBitFlag(
             read_zip_value[DType.uint16](fp)
         )
-        self.compression_method = read_zip_value[DType.uint16](fp)
+        self.compression = read_zip_value[DType.uint16](fp)
         self.last_mod_file_time = read_zip_value[DType.uint16](fp)
         self.last_mod_file_date = read_zip_value[DType.uint16](fp)
         self.crc32 = read_zip_value[DType.uint32](fp)
@@ -200,7 +200,7 @@ struct LocalFileHeader(Copyable, Movable):
         write_zip_value(fp, self.SIGNATURE)
         write_zip_value(fp, self.version_needed_to_extract)
         write_zip_value(fp, self.general_purpose_bit_flag.bits)
-        write_zip_value(fp, self.compression_method)
+        write_zip_value(fp, self.compression)
         write_zip_value(fp, self.last_mod_file_time)
         write_zip_value(fp, self.last_mod_file_date)
         write_zip_value(fp, self.crc32)
@@ -259,7 +259,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
     var version_made_by: UInt16
     var version_needed_to_extract: UInt16
     var general_purpose_bit_flag: GeneralPurposeBitFlag
-    var compression_method: UInt16
+    var compression: UInt16
     var last_mod_file_time: UInt16
     var last_mod_file_date: UInt16
     var crc32: UInt32
@@ -285,7 +285,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         self.general_purpose_bit_flag = (
             local_file_header.general_purpose_bit_flag
         )
-        self.compression_method = local_file_header.compression_method
+        self.compression = local_file_header.compression
         self.last_mod_file_time = local_file_header.last_mod_file_time
         self.last_mod_file_date = local_file_header.last_mod_file_date
         self.crc32 = local_file_header.crc32
@@ -304,7 +304,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         version_made_by: UInt16,
         version_needed_to_extract: UInt16,
         general_purpose_bit_flag: GeneralPurposeBitFlag,
-        compression_method: UInt16,
+        compression: UInt16,
         last_mod_file_time: UInt16,
         last_mod_file_date: UInt16,
         crc32: UInt32,
@@ -321,7 +321,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         self.version_made_by = version_made_by
         self.version_needed_to_extract = version_needed_to_extract
         self.general_purpose_bit_flag = general_purpose_bit_flag
-        self.compression_method = compression_method
+        self.compression = compression
         self.last_mod_file_time = last_mod_file_time
         self.last_mod_file_date = last_mod_file_date
         self.crc32 = crc32
@@ -351,7 +351,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         self.general_purpose_bit_flag = GeneralPurposeBitFlag(
             read_zip_value[DType.uint16](fp)
         )
-        self.compression_method = read_zip_value[DType.uint16](fp)
+        self.compression = read_zip_value[DType.uint16](fp)
         self.last_mod_file_time = read_zip_value[DType.uint16](fp)
         self.last_mod_file_date = read_zip_value[DType.uint16](fp)
         self.crc32 = read_zip_value[DType.uint32](fp)
@@ -441,7 +441,7 @@ struct CentralDirectoryFileHeader(Copyable, Movable):
         write_zip_value(fp, self.version_made_by)
         write_zip_value(fp, self.version_needed_to_extract)
         write_zip_value(fp, self.general_purpose_bit_flag.bits)
-        write_zip_value(fp, self.compression_method)
+        write_zip_value(fp, self.compression)
         write_zip_value(fp, self.last_mod_file_time)
         write_zip_value(fp, self.last_mod_file_date)
         write_zip_value(fp, self.crc32)
