@@ -116,13 +116,13 @@ def test_force_zip64_with_compression():
     file_path = "/tmp/test_force_zip64_compression.zip"
 
     # Test with ZIP_DEFLATED compression
-    zip_file = ZipFile(file_path, "w", allowZip64=True)
-
-    # Open a file with force_zip64=True and DEFLATED compression
     from zipfile import ZIP_DEFLATED
 
+    zip_file = ZipFile(file_path, "w", ZIP_DEFLATED, allowZip64=True)
+
+    # Open a file with force_zip64=True and DEFLATED compression
     file_writer = zip_file.open_to_write(
-        "compressed.txt", "w", ZIP_DEFLATED, force_zip64=True
+        "compressed.txt", "w", force_zip64=True
     )
     content = "This is compressed data. " * 100  # Make it compressible
     file_writer.write(content.as_bytes())
