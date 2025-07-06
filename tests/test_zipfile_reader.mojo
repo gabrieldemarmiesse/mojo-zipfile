@@ -1,6 +1,39 @@
 import zipfile
 from testing import assert_equal, assert_true, assert_raises
 from python import Python
+import os
+
+
+def test_default_open_mode_is_read():
+    data = "This is a test pattern that repeats many times. " * 50
+    file_path = "/tmp/test_default_open_mode_is_read.zip"
+
+    zip_write = zipfile.ZipFile(file_path, "w")
+    zip_write.writestr("large.txt", data)
+    zip_write.close()
+
+    zip_read = zipfile.ZipFile(file_path, "r")
+    # We open without specifying mode, it should default to 'r'
+    file_reader = zip_read.open("large.txt")
+    assert_equal(file_reader.read().__str__(), List(data.as_bytes()).__str__())
+
+    _ = os.remove(file_path)
+
+
+def test_default_open_mode_is_read_zipinfo():
+    data = "This is a test pattern that repeats many times. " * 50
+    file_path = "/tmp/test_default_open_mode_is_read_zipinfo.zip"
+
+    zip_write = zipfile.ZipFile(file_path, "w")
+    zip_write.writestr("large.txt", data)
+    zip_write.close()
+
+    zip_read = zipfile.ZipFile(file_path, "r")
+    # We open without specifying mode, it should default to 'r'
+    file_reader = zip_read.open(zip_read.infolist()[0])
+    assert_equal(file_reader.read().__str__(), List(data.as_bytes()).__str__())
+
+    _ = os.remove(file_path)
 
 
 def test_streaming_large_file_small_chunks():

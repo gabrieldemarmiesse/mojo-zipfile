@@ -225,6 +225,17 @@ struct ZipFile:
             )
         self.file.close()
 
+    # Default when no mode is specified
+    fn open(
+        mut self, name: String
+    ) raises -> ZipFileReader[__origin_of(self.file)]:
+        return self.open(self.getinfo(name), "r")
+
+    fn open(
+        mut self, name: ZipInfo
+    ) raises -> ZipFileReader[__origin_of(self.file)]:
+        return self.open(name, "r")
+
     fn open(
         mut self, name: ZipInfo, mode: StringLiteral["r".value]
     ) raises -> ZipFileReader[__origin_of(self.file)]:
