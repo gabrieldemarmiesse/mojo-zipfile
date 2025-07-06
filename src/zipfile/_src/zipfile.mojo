@@ -399,6 +399,221 @@ struct ZipFile:
         file_reader = self.open(name, "r")
         return file_reader.read()
 
+    fn extract(
+        mut self, member: String, path: Optional[String] = None
+    ) raises -> String:
+        """Extract a member from the archive to the file system.
+
+        Parameters:
+            member: The name of the file to extract.
+            path: The directory to extract to (defaults to current directory).
+
+        Returns:
+            The normalized path of the extracted file.
+
+        Raises:
+            Error: If the archive is not open for reading or member not found.
+        """
+        if self.mode != "r":
+            raise Error("extract() requires mode 'r'")
+
+        var info = self.getinfo(member)
+        return self._extract_member(info, path)
+
+    fn extract(
+        mut self, member: ZipInfo, path: Optional[String] = None
+    ) raises -> String:
+        """Extract a member from the archive to the file system using ZipInfo.
+
+        Parameters:
+            member: The ZipInfo object of the file to extract.
+            path: The directory to extract to (defaults to current directory).
+
+        Returns:
+            The normalized path of the extracted file.
+
+        Raises:
+            Error: If the archive is not open for reading.
+        """
+        if self.mode != "r":
+            raise Error("extract() requires mode 'r'")
+
+        return self._extract_member(member, path)
+
+    fn extractall(mut self, path: Optional[String] = None) raises:
+        """Extract all members from the archive to the file system.
+
+        Parameters:
+            path: The directory to extract to (defaults to current directory).
+
+        Raises:
+            Error: If the archive is not open for reading.
+        """
+        if self.mode != "r":
+            raise Error("extractall() requires mode 'r'")
+
+        # Ensure the extraction directory exists
+        import os
+
+        if path:
+            var extract_dir = path.value()
+            os.makedirs(extract_dir, exist_ok=True)
+
+        # Get all members in the archive
+        var all_members = self.infolist()
+
+        # Extract each member
+        for member in all_members:
+            _ = self._extract_member(member, path)
+
+    fn extractall(
+        mut self, path: Optional[String], members: List[String]
+    ) raises:
+        """Extract specified members from the archive to the file system.
+
+        Parameters:
+            path: The directory to extract to (defaults to current directory).
+            members: List of member names to extract.
+
+        Raises:
+            Error: If the archive is not open for reading or member not found.
+        """
+        if self.mode != "r":
+            raise Error("extractall() requires mode 'r'")
+
+        # Ensure the extraction directory exists
+        import os
+
+        if path:
+            var extract_dir = path.value()
+            os.makedirs(extract_dir, exist_ok=True)
+
+        # Extract each specified member
+        for member_name in members:
+            var info = self.getinfo(member_name)
+            _ = self._extract_member(info, path)
+
+    fn extractall(
+        mut self, path: Optional[String], members: List[ZipInfo]
+    ) raises:
+        """Extract specified members from the archive to the file system using ZipInfo objects.
+
+        Parameters:
+            path: The directory to extract to (defaults to current directory).
+            members: List of ZipInfo objects to extract.
+
+        Raises:
+            Error: If the archive is not open for reading.
+        """
+        if self.mode != "r":
+            raise Error("extractall() requires mode 'r'")
+
+        # Ensure the extraction directory exists
+        import os
+
+        if path:
+            var extract_dir = path.value()
+            os.makedirs(extract_dir, exist_ok=True)
+
+        # Extract each specified member
+        for member in members:
+            _ = self._extract_member(member, path)
+
+    fn _extract_member(
+        mut self, info: ZipInfo, path: Optional[String]
+    ) raises -> String:
+        """Internal method to extract a member to the file system."""
+        from pathlib import Path
+        import os
+
+        # Sanitize the filename to prevent path traversal attacks
+        var target_path = self._sanitize_filename(info.filename)
+
+        # Determine the extraction directory
+        var extract_dir: String
+        if path:
+            extract_dir = path.value()
+        else:
+            extract_dir = "."  # Default to current directory
+
+        # Build the full target path
+        var full_path = Path(extract_dir) / target_path
+        var normalized_path = full_path.__str__()
+
+        if info.is_dir():
+            # Create directory
+            os.makedirs(normalized_path, exist_ok=True)
+        else:
+            # Create parent directories if they don't exist
+            if "/" in normalized_path or "\\" in normalized_path:
+                var parent_str = self._get_parent_dir(normalized_path)
+                if parent_str != "":
+                    os.makedirs(parent_str, exist_ok=True)
+
+            # Extract the file content
+            var file_data = self.read(info.filename)
+
+            # Write the file to disk
+            with open(normalized_path, "w") as output_file:
+                output_file.write_bytes(file_data)
+
+        return normalized_path
+
+    fn _get_parent_dir(self, file_path: String) -> String:
+        """Get the parent directory of a file path."""
+        var parts = file_path.split("/")
+        if len(parts) <= 1:
+            # Try backslash for Windows paths
+            parts = file_path.split("\\")
+            if len(parts) <= 1:
+                return ""
+
+        # Remove the last part (filename) and join the rest
+        var parent_parts = List[String]()
+        for i in range(len(parts) - 1):
+            parent_parts.append(parts[i])
+
+        var result = ""
+        for i in range(len(parent_parts)):
+            if i > 0:
+                result += "/"
+            result += parent_parts[i]
+
+        return result
+
+    fn _sanitize_filename(self, filename: String) -> String:
+        """Sanitize filename to prevent path traversal attacks."""
+        var sanitized = filename
+
+        # Remove absolute path components
+        if sanitized.startswith("/"):
+            sanitized = sanitized[1:]
+
+        # Remove drive letters on Windows (C:, D:, etc.)
+        if len(sanitized) >= 2 and sanitized[1] == ":":
+            sanitized = sanitized[2:]
+
+        # Remove leading backslashes
+        while sanitized.startswith("\\"):
+            sanitized = sanitized[1:]
+
+        # Replace ".." components with safe names
+        var parts = sanitized.split("/")
+        var safe_parts = List[String]()
+        for i in range(len(parts)):
+            var part = parts[i]
+            if part != ".." and part != ".":
+                safe_parts.append(part)
+
+        # Join the parts back together
+        var result = ""
+        for i in range(len(safe_parts)):
+            if i > 0:
+                result += "/"
+            result += safe_parts[i]
+
+        return result
+
     fn getinfo(mut self, name: String) raises -> ZipInfo:
         # We need to seek to the start of the header
         self._start_reading_central_directory_file_headers()
