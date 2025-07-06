@@ -60,7 +60,7 @@ def test_deflate_compression_ratio():
 
     # Verify content is the same when reading back
     zip_read = zipfile.ZipFile(deflated_file, "r")
-    file_reader = zip_read.open_to_read("large.txt", "r")
+    file_reader = zip_read.open("large.txt", "r")
     content = file_reader.read()
     assert_equal(String(bytes=content), large_data)
     zip_read.close()
@@ -87,7 +87,7 @@ def test_compression_levels():
 
         # Verify content can be read back correctly
         zip_read = zipfile.ZipFile(file_path, "r")
-        file_reader = zip_read.open_to_read("test.txt", "r")
+        file_reader = zip_read.open("test.txt", "r")
         content = file_reader.read()
         assert_equal(String(bytes=content), test_data)
         zip_read.close()
@@ -131,11 +131,11 @@ def test_read_content():
 
     open_zip_mojo = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo.infolist()), 1)
-    hello_file = open_zip_mojo.open_to_read("hello.txt", "r")
+    hello_file = open_zip_mojo.open("hello.txt", "r")
     content = hello_file.read()
     assert_equal(String(bytes=content), "hello world!")
 
-    hello_file = open_zip_mojo.open_to_read("hello.txt", "r")
+    hello_file = open_zip_mojo.open("hello.txt", "r")
     content = hello_file.read(5)
     assert_equal(String(bytes=content), "hello")
     content = hello_file.read(5)

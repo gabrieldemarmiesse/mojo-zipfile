@@ -171,7 +171,7 @@ def test_read_zip64_large_file():
     assert_equal(len(zip_file.infolist()), 1)
 
     # Let's check the size of the file
-    f = zip_file.open_to_read("large_file.txt", "r")
+    f = zip_file.open("large_file.txt", "r")
     bytes_seen = 0
 
     while True:
@@ -191,7 +191,7 @@ def test_write_zip64_large_file_mojo_read_python():
     zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Create a file writer for the large file
-    writer = zip_file.open_to_write("large_file.txt", "w")
+    writer = zip_file.open("large_file.txt", "w")
 
     chunk_size = 10 * MB
     target_size = 4 * GB + 50
@@ -269,7 +269,7 @@ def test_write_zip64_large_file_disallow():
     zip_file = ZipFile(file_path, "w", allowZip64=False)
 
     # Create a file writer for the large file
-    writer = zip_file.open_to_write("large_file.txt", "w")
+    writer = zip_file.open("large_file.txt", "w")
 
     chunk_size = 10 * MB
     target_size = 4 * GB + 50
@@ -381,6 +381,6 @@ def test_read_many_files_to_go_over_4GB_limit():
 
     # Let's read some files
     for entry in mojo_zip_file.infolist()[:10]:
-        f = mojo_zip_file.open_to_read(entry.filename, "r")
+        f = mojo_zip_file.open(entry.filename, "r")
         content_read = f.read()
         assert_equal(len(content_read), len(content))
