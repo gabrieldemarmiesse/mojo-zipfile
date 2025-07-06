@@ -43,7 +43,7 @@ struct ZipFile:
         Zip64EndOfCentralDirectoryRecord
     ]
     var allowZip64: Bool
-    var compression_method: UInt16
+    var compression: UInt16
     var compresslevel: Optional[Int32]
 
     fn __init__[
@@ -61,7 +61,7 @@ struct ZipFile:
             raise Error("Only read and write modes are suported")
         self.mode = mode
         self.allowZip64 = allowZip64
-        self.compression_method = compression
+        self.compression = compression
         self.compresslevel = compresslevel
         self.central_directory_files_headers = List[
             CentralDirectoryFileHeader
@@ -125,7 +125,7 @@ struct ZipFile:
         self.zip64_end_of_central_directory = (
             existing.zip64_end_of_central_directory^
         )
-        self.compression_method = existing.compression_method
+        self.compression = existing.compression
         self.compresslevel = existing.compresslevel^
 
     fn __enter__(ref self) -> ref [__origin_of(self)] ZipFile:
@@ -231,8 +231,8 @@ struct ZipFile:
         if mode != "r":
             raise Error("Only read mode is the only mode supported")
         if (
-            name._compression_method != ZIP_STORED
-            and name._compression_method != ZIP_DEFLATED
+            name._compression != ZIP_STORED
+            and name._compression != ZIP_DEFLATED
         ):
             raise Error(
                 "Only ZIP_STORED and ZIP_DEFLATED compression method is"
@@ -246,7 +246,7 @@ struct ZipFile:
             Pointer(to=self.file),
             name._compressed_size,
             name._uncompressed_size,
-            name._compression_method,
+            name._compression,
             name._crc32.value(),
         )
 
@@ -264,10 +264,7 @@ struct ZipFile:
     ) raises -> ZipFileWriter[__origin_of(self)]:
         if mode != "w":
             raise Error("Only write mode is the only mode supported")
-        if (
-            self.compression_method != ZIP_STORED
-            and self.compression_method != ZIP_DEFLATED
-        ):
+        if self.compression != ZIP_STORED and self.compression != ZIP_DEFLATED:
             raise Error(
                 "Only ZIP_STORED and ZIP_DEFLATED compression methods are"
                 " supported"
@@ -276,7 +273,7 @@ struct ZipFile:
             Pointer(to=self),
             name,
             mode,
-            self.compression_method,
+            self.compression,
             self.compresslevel.value() if self.compresslevel else -1,
             force_zip64,
         )

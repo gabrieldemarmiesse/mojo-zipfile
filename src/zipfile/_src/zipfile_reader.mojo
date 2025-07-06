@@ -8,7 +8,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
     var file: Pointer[FileHandle, origin]
     var compressed_size: UInt64
     var uncompressed_size: UInt64
-    var compression_method: UInt16
+    var compression: UInt16
     var start: UInt64
     var expected_crc32: UInt32
     var current_crc32: UInt32
@@ -21,13 +21,13 @@ struct ZipFileReader[origin: Origin[mut=True]]:
         file: Pointer[FileHandle, origin],
         compressed_size: UInt64,
         uncompressed_size: UInt64,
-        compression_method: UInt16,
+        compression: UInt16,
         expected_crc32: UInt32,
     ) raises:
         self.file = file
         self.compressed_size = compressed_size
         self.uncompressed_size = uncompressed_size
-        self.compression_method = compression_method
+        self.compression = compression
         self.start = file[].seek(0, os.SEEK_CUR)
         self.expected_crc32 = expected_crc32
         self.current_crc32 = 0  # Initialize CRC32 to 0
@@ -53,7 +53,7 @@ struct ZipFileReader[origin: Origin[mut=True]]:
             )
 
     fn read(mut self, owned size: Int = -1) raises -> List[UInt8]:
-        if self.compression_method == ZIP_STORED:
+        if self.compression == ZIP_STORED:
             if size == -1:
                 size = self._remaining_size()
             else:
@@ -66,12 +66,11 @@ struct ZipFileReader[origin: Origin[mut=True]]:
                 # We are at the end of the file
                 self._check_crc32()
             return bytes
-        elif self.compression_method == ZIP_DEFLATED:
+        elif self.compression == ZIP_DEFLATED:
             return self._read_deflated(size)
         else:
             raise Error(
-                "Unsupported compression method: "
-                + String(self.compression_method)
+                "Unsupported compression method: " + String(self.compression)
             )
 
     fn _read_deflated(mut self, size: Int) raises -> List[UInt8]:

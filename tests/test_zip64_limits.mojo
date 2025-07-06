@@ -24,7 +24,7 @@ def test_zip64_file_size_limit_local_header():
         write_zip_value(fp, LocalFileHeader.SIGNATURE)
         write_zip_value(fp, UInt16(20))  # version_needed_to_extract
         write_zip_value(fp, UInt16(0))  # general_purpose_bit_flag
-        write_zip_value(fp, UInt16(0))  # compression_method (ZIP_STORED)
+        write_zip_value(fp, UInt16(0))  # compression (ZIP_STORED)
         write_zip_value(fp, UInt16(0))  # last_mod_file_time
         write_zip_value(fp, UInt16(0))  # last_mod_file_date
         write_zip_value(fp, UInt32(0))  # crc32
@@ -60,7 +60,7 @@ def test_zip64_file_offset_limit_central_directory():
         write_zip_value(fp, UInt16(20))  # version_made_by
         write_zip_value(fp, UInt16(20))  # version_needed_to_extract
         write_zip_value(fp, UInt16(0))  # general_purpose_bit_flag
-        write_zip_value(fp, UInt16(0))  # compression_method
+        write_zip_value(fp, UInt16(0))  # compression
         write_zip_value(fp, UInt16(0))  # last_mod_file_time
         write_zip_value(fp, UInt16(0))  # last_mod_file_date
         write_zip_value(fp, UInt32(0))  # crc32
