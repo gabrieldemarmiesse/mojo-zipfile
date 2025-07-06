@@ -195,7 +195,7 @@ def test_read_zip64_moderate_file():
     assert_equal(len(info_list), 1)
 
     # Read the file content
-    file_reader = zip_file.open_to_read("test_file.txt", "r")
+    file_reader = zip_file.open("test_file.txt", "r")
     content = file_reader.read()
 
     # Expected content size is 10MB
@@ -240,7 +240,7 @@ def test_read_zip64_many_files():
     test_files = ["file_000.txt", "file_500.txt", "file_999.txt"]
 
     for filename in test_files:
-        file_reader = zip_file.open_to_read(filename, "r")
+        file_reader = zip_file.open(filename, "r")
         content = file_reader.read()
         content_str = String(bytes=content)
 
@@ -291,7 +291,7 @@ def test_read_zip64_file_streaming():
     zip_file = ZipFile(file_path, "r")
 
     # Test streaming read of the large file
-    file_reader = zip_file.open_to_read("test_file.txt", "r")
+    file_reader = zip_file.open("test_file.txt", "r")
 
     # Read in chunks of 1MB
     chunk_size = 1024 * 1024

@@ -97,7 +97,7 @@ def test_write_zip64_streaming():
     zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Open a file for streaming write with force_zip64=True
-    file_writer = zip_file.open_to_write(
+    file_writer = zip_file.open(
         "large_streamed_file.txt", "w", force_zip64=True
     )
 

@@ -225,11 +225,24 @@ struct ZipFile:
             )
         self.file.close()
 
-    fn open_to_read(
-        mut self, name: ZipInfo, mode: String
+    # Default when no mode is specified
+    fn open(
+        mut self, name: String
     ) raises -> ZipFileReader[__origin_of(self.file)]:
-        if mode != "r":
-            raise Error("Only read mode is the only mode supported")
+        return self.open(self.getinfo(name), "r")
+
+    fn open(
+        mut self, name: ZipInfo
+    ) raises -> ZipFileReader[__origin_of(self.file)]:
+        return self.open(name, "r")
+
+    fn open(
+        mut self, name: ZipInfo, mode: StringLiteral["r".value]
+    ) raises -> ZipFileReader[__origin_of(self.file)]:
+        if self.mode != "r":
+            raise Error(
+                "You need to use `ZipFile(..., mode='r')` to use open(mode='r')"
+            )
         if (
             name._compression != ZIP_STORED
             and name._compression != ZIP_DEFLATED
@@ -250,20 +263,22 @@ struct ZipFile:
             name._crc32.value(),
         )
 
-    fn open_to_read(
-        mut self, name: String, mode: String
+    fn open(
+        mut self, name: String, mode: StringLiteral["r".value]
     ) raises -> ZipFileReader[__origin_of(self.file)]:
-        return self.open_to_read(self.getinfo(name), mode)
+        return self.open(self.getinfo(name), mode)
 
-    fn open_to_write(
+    fn open(
         mut self,
         name: String,
-        mode: String,
+        mode: StringLiteral["w".value],
         *,
         force_zip64: Bool = False,
     ) raises -> ZipFileWriter[__origin_of(self)]:
-        if mode != "w":
-            raise Error("Only write mode is the only mode supported")
+        if self.mode != "w":
+            raise Error(
+                "You need to use `ZipFile(..., mode='w')` to use open(mode='w')"
+            )
         if self.compression != ZIP_STORED and self.compression != ZIP_DEFLATED:
             raise Error(
                 "Only ZIP_STORED and ZIP_DEFLATED compression methods are"
@@ -284,13 +299,13 @@ struct ZipFile:
         data: String,
     ) raises:
         # Some streaming would be nice here
-        file_handle = self.open_to_write(arcname, "w")
+        file_handle = self.open(arcname, "w")
         file_handle.write(data.as_bytes())
         file_handle.close()
 
     fn read(mut self, name: String) raises -> List[UInt8]:
         """Read and return the bytes of a file in the archive."""
-        file_reader = self.open_to_read(name, "r")
+        file_reader = self.open(name, "r")
         return file_reader.read()
 
     fn getinfo(mut self, name: String) raises -> ZipInfo:

@@ -7,7 +7,7 @@ from python import Python
 def test_write_simple_hello_world_progressive_with_close():
     file_path = "/tmp/hello888.zip"
     open_zip_mojo = zipfile.ZipFile(file_path, "w")
-    zip_entry = open_zip_mojo.open_to_write("hello.txt", "w")
+    zip_entry = open_zip_mojo.open("hello.txt", "w")
     zip_entry.write(String("hello").as_bytes())
     zip_entry.write(String(" wo").as_bytes())
     zip_entry.write(String("rld!").as_bytes())
@@ -22,7 +22,7 @@ def test_write_simple_hello_world_progressive_with_close():
 def test_write_simple_hello_world_progressive_without_close():
     file_path = "/tmp/hello9999.zip"
     open_zip_mojo = zipfile.ZipFile(file_path, "w")
-    zip_entry = open_zip_mojo.open_to_write("hello.txt", "w")
+    zip_entry = open_zip_mojo.open("hello.txt", "w")
     zip_entry.write(String("hello").as_bytes())
     zip_entry.write(String(" wo").as_bytes())
     zip_entry.write(String("rld!").as_bytes())
@@ -48,7 +48,7 @@ def test_write_simple_hello_world_deflate():
     # Also verify we can read it back with Mojo
     open_zip_mojo_read = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo_read.infolist()), 1)
-    hello_file = open_zip_mojo_read.open_to_read("hello.txt", "r")
+    hello_file = open_zip_mojo_read.open("hello.txt", "r")
     content = hello_file.read()
     assert_equal(String(bytes=content), "hello world!")
     open_zip_mojo_read.close()
@@ -57,7 +57,7 @@ def test_write_simple_hello_world_deflate():
 def test_write_simple_hello_world_deflate_progressive():
     file_path = "/tmp/hello_deflate_progressive_mojo.zip"
     open_zip_mojo = zipfile.ZipFile(file_path, "w", zipfile.ZIP_DEFLATED)
-    zip_entry = open_zip_mojo.open_to_write("hello.txt", "w")
+    zip_entry = open_zip_mojo.open("hello.txt", "w")
     zip_entry.write(String("hello").as_bytes())
     zip_entry.write(String(" wo").as_bytes())
     zip_entry.write(String("rld!").as_bytes())
@@ -72,7 +72,7 @@ def test_write_simple_hello_world_deflate_progressive():
     # Also verify we can read it back with Mojo
     open_zip_mojo_read = zipfile.ZipFile(file_path, "r")
     assert_equal(len(open_zip_mojo_read.infolist()), 1)
-    hello_file = open_zip_mojo_read.open_to_read("hello.txt", "r")
+    hello_file = open_zip_mojo_read.open("hello.txt", "r")
     content = hello_file.read()
     assert_equal(String(bytes=content), "hello world!")
     open_zip_mojo_read.close()
@@ -89,7 +89,7 @@ def test_compression_level_progressive_write():
     zip_file1 = zipfile.ZipFile(
         file_path_level1, "w", zipfile.ZIP_DEFLATED, compresslevel=Int32(1)
     )
-    zip_entry1 = zip_file1.open_to_write("progressive.txt", "w")
+    zip_entry1 = zip_file1.open("progressive.txt", "w")
     for i in range(len(test_data_parts)):
         zip_entry1.write(
             (test_data_parts[i] * 50).as_bytes()
@@ -101,7 +101,7 @@ def test_compression_level_progressive_write():
     zip_file9 = zipfile.ZipFile(
         file_path_level9, "w", zipfile.ZIP_DEFLATED, compresslevel=Int32(9)
     )
-    zip_entry9 = zip_file9.open_to_write("progressive.txt", "w")
+    zip_entry9 = zip_file9.open("progressive.txt", "w")
     for i in range(len(test_data_parts)):
         zip_entry9.write((test_data_parts[i] * 50).as_bytes())
     zip_entry9.close()
@@ -115,13 +115,13 @@ def test_compression_level_progressive_write():
     )
 
     zip_read1 = zipfile.ZipFile(file_path_level1, "r")
-    file_reader1 = zip_read1.open_to_read("progressive.txt", "r")
+    file_reader1 = zip_read1.open("progressive.txt", "r")
     content1 = file_reader1.read()
     assert_equal(String(bytes=content1), expected_content)
     zip_read1.close()
 
     zip_read9 = zipfile.ZipFile(file_path_level9, "r")
-    file_reader9 = zip_read9.open_to_read("progressive.txt", "r")
+    file_reader9 = zip_read9.open("progressive.txt", "r")
     content9 = file_reader9.read()
     assert_equal(String(bytes=content9), expected_content)
     zip_read9.close()
@@ -195,7 +195,7 @@ def test_compression_level_constants():
         file_path_default,
     ]:
         zip_read = zipfile.ZipFile(file_path, "r")
-        file_reader = zip_read.open_to_read("test.txt", "r")
+        file_reader = zip_read.open("test.txt", "r")
         content = file_reader.read()
         assert_equal(String(bytes=content), test_data)
         zip_read.close()

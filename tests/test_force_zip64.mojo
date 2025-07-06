@@ -10,7 +10,7 @@ def test_force_zip64_default_false():
 
     # Create a ZipFile and open a file for writing without specifying force_zip64
     zip_file = ZipFile(file_path, "w", allowZip64=True)
-    file_writer = zip_file.open_to_write("test.txt", "w")
+    file_writer = zip_file.open("test.txt", "w")
 
     # Check the default value
     if file_writer._force_zip64:
@@ -28,7 +28,7 @@ def test_force_zip64_explicit_true():
 
     # Create a ZipFile and open a file for writing with force_zip64=True
     zip_file = ZipFile(file_path, "w", allowZip64=True)
-    file_writer = zip_file.open_to_write("test.txt", "w", force_zip64=True)
+    file_writer = zip_file.open("test.txt", "w", force_zip64=True)
 
     # Check the value
     if not file_writer._force_zip64:
@@ -46,7 +46,7 @@ def test_force_zip64_explicit_false():
 
     # Create a ZipFile and open a file for writing with force_zip64=False
     zip_file = ZipFile(file_path, "w", allowZip64=True)
-    file_writer = zip_file.open_to_write("test.txt", "w", force_zip64=False)
+    file_writer = zip_file.open("test.txt", "w", force_zip64=False)
 
     # Check the value
     if file_writer._force_zip64:
@@ -66,7 +66,7 @@ def test_force_zip64_true_with_allowZip64_false_fails():
     zip_file = ZipFile(file_path, "w", allowZip64=False)
 
     # Try to open a file with force_zip64=True - this should fail when closing
-    file_writer = zip_file.open_to_write("test.txt", "w", force_zip64=True)
+    file_writer = zip_file.open("test.txt", "w", force_zip64=True)
     file_writer.write("Hello, World!".as_bytes())
 
     # The error should occur when closing the file writer
@@ -86,7 +86,7 @@ def test_force_zip64_with_small_file():
     zip_file = ZipFile(file_path, "w", allowZip64=True)
 
     # Open a file with force_zip64=True and write small content
-    file_writer = zip_file.open_to_write("small.txt", "w", force_zip64=True)
+    file_writer = zip_file.open("small.txt", "w", force_zip64=True)
     small_content = "This is a small file that doesn't normally need ZIP64."
     file_writer.write(small_content.as_bytes())
     file_writer.close()
@@ -121,9 +121,7 @@ def test_force_zip64_with_compression():
     zip_file = ZipFile(file_path, "w", ZIP_DEFLATED, allowZip64=True)
 
     # Open a file with force_zip64=True and DEFLATED compression
-    file_writer = zip_file.open_to_write(
-        "compressed.txt", "w", force_zip64=True
-    )
+    file_writer = zip_file.open("compressed.txt", "w", force_zip64=True)
     content = "This is compressed data. " * 100  # Make it compressible
     file_writer.write(content.as_bytes())
     file_writer.close()
