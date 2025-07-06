@@ -8,7 +8,7 @@ from ._src.zipinfo import ZipInfo
 
 # (Not implemented) ZIP_BZIP2
 # (Not implemented) ZIP_LZMA
-# (Partially implemented) ZipFile(file, mode='r', compression=ZIP_STORED, allowZip64=True, compresslevel=None, *, strict_timestamps=True, metadata_encoding=None)
+# ZipFile(file, mode='r', compression=ZIP_STORED, allowZip64=True, compresslevel=None)
 # ZipFile.close()
 # ZipFile.getinfo(name)
 # ZipFile.infolist()
