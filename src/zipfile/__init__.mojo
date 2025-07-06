@@ -13,22 +13,21 @@ from ._src.zipinfo import ZipInfo
 # ZipFile.getinfo(name)
 # ZipFile.infolist()
 # ZipFile.namelist()
-# ZipFile.open(name, mode='r', pwd=None, *, force_zip64=False)
-# (Not implemented) ZipFile.extract(member, path=None, pwd=None)
-# (Not implemented) ZipFile.extractall(path=None, members=None, pwd=None)
+# ZipFile.open(name, mode='r', *, force_zip64=False)
+# (Not implemented) ZipFile.extract(member, path=None)
+# (Not implemented) ZipFile.extractall(path=None, members=None)
 # (Not implemented) ZipFile.printdir()
-# (Not implemented) ZipFile.setpassword(pwd)
-# ZipFile.read(name, pwd=None)
+# ZipFile.read(name)
 # (Not implemented) ZipFile.testzip()
 # (Not implemented) ZipFile.write(filename, arcname=None, compress_type=None, compresslevel=None)
 # (Partially implemented) ZipFile.writestr(zinfo_or_arcname, data, compress_type=None, compresslevel=None)
-# (Not implemented) ZipFile.mkdir(zinfo_or_directory, mode=511)
+# ZipFile.mkdir(zinfo_or_directory, mode=511)
 # (Not implemented) ZipFile.filename
 # (Not implemented) ZipFile.debug
 # (Not implemented) ZipFile.comment
 # (Not implemented) Path(root, at='')
 # (Not implemented) Path.name
-# (Not implemented) Path.open(mode='r', *, pwd, **)
+# (Not implemented) Path.open(mode='r')
 # (Not implemented) Path.iterdir()
 # (Not implemented) Path.is_dir()
 # (Not implemented) Path.is_file()
