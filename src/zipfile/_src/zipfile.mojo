@@ -43,11 +43,18 @@ struct ZipFile:
         Zip64EndOfCentralDirectoryRecord
     ]
     var allowZip64: Bool
+    var compression_method: UInt16
+    var compresslevel: Optional[Int32]
 
     fn __init__[
         FileNameType: PathLike
     ](
-        out self, filename: FileNameType, mode: String, allowZip64: Bool = True
+        out self,
+        filename: FileNameType,
+        mode: String,
+        compression: UInt16 = ZIP_STORED,
+        allowZip64: Bool = True,
+        compresslevel: Optional[Int32] = None,
     ) raises:
         self.file = open(filename, mode)
         if mode not in String("r", "w"):
@@ -248,14 +255,13 @@ struct ZipFile:
         mut self,
         name: String,
         mode: String,
-        compression_method: UInt16 = ZIP_STORED,
-        compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
+        *,
         force_zip64: Bool = False,
     ) raises -> ZipFileWriter[__origin_of(self)]:
         if mode != "w":
             raise Error("Only write mode is the only mode supported")
         if (
-            compression_method != ZIP_STORED
+            self.compression_method != ZIP_STORED
             and compression_method != ZIP_DEFLATED
         ):
             raise Error(
