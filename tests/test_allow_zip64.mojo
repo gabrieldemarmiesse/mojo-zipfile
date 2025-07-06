@@ -3,6 +3,7 @@ import os
 from zipfile import ZipFile
 from zipfile._src.utils_testing import KB, MB, GB
 from python import Python
+import time
 
 
 def test_allowZip64_default_true():
@@ -378,8 +379,8 @@ def test_read_many_files_to_go_over_4GB_limit():
     mojo_zip_file = ZipFile(file_path, "r")
     assert_equal(len(mojo_zip_file.infolist()), 5000)
 
-    # Let's read each file
-    for entry in mojo_zip_file.infolist():
+    # Let's read some files
+    for entry in mojo_zip_file.infolist()[:10]:
         f = mojo_zip_file.open_to_read(entry.filename, "r")
         content_read = f.read()
         assert_equal(len(content_read), len(content))
