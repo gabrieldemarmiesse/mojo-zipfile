@@ -21,7 +21,7 @@ from ._src.zipinfo import ZipInfo
 # (Not implemented) ZipFile.testzip()
 # (Not implemented) ZipFile.write(filename, arcname=None, compress_type=None, compresslevel=None)
 # (Partially implemented) ZipFile.writestr(zinfo_or_arcname, data, compress_type=None, compresslevel=None)
-# (Not implemented) ZipFile.mkdir(zinfo_or_directory, mode=511)
+# ZipFile.mkdir(zinfo_or_directory, mode=511)
 # (Not implemented) ZipFile.filename
 # (Not implemented) ZipFile.debug
 # (Not implemented) ZipFile.comment

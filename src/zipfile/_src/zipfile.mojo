@@ -303,6 +303,97 @@ struct ZipFile:
         file_handle.write(data.as_bytes())
         file_handle.close()
 
+    fn mkdir(mut self, zinfo_or_directory: String, mode: UInt16 = 0o777) raises:
+        """Create a directory inside the ZIP archive.
+
+        Parameters:
+            zinfo_or_directory: The directory name to create.
+            mode: The Unix file permissions for the directory (default 0o777).
+
+        Raises:
+            Error: If the archive is not open for writing.
+        """
+        if self.mode != "w":
+            raise Error("mkdir() requires mode 'w'")
+
+        # Ensure directory name ends with '/'
+        var dirname = zinfo_or_directory
+        if not dirname.endswith("/"):
+            dirname = dirname + "/"
+
+        # Create a ZipInfo for the directory
+        var zinfo = ZipInfo._create_directory(dirname, mode)
+
+        # Write the directory entry
+        self._write_directory(zinfo)
+
+    fn mkdir(
+        mut self, zinfo_or_directory: ZipInfo, mode: UInt16 = 0o777
+    ) raises:
+        """Create a directory inside the ZIP archive using a ZipInfo object.
+
+        Parameters:
+            zinfo_or_directory: The ZipInfo object for the directory.
+            mode: The Unix file permissions (ignored when ZipInfo is provided).
+
+        Raises:
+            Error: If the archive is not open for writing.
+        """
+        if self.mode != "w":
+            raise Error("mkdir() requires mode 'w'")
+
+        # Ensure the ZipInfo represents a directory
+        var zinfo = zinfo_or_directory
+        if not zinfo.is_dir():
+            raise Error("ZipInfo filename must end with '/'")
+
+        # Write the directory entry
+        self._write_directory(zinfo)
+
+    fn _write_directory(mut self, zinfo: ZipInfo) raises:
+        """Internal method to write a directory entry to the archive."""
+        # Record the position where we're writing the local file header
+        var header_offset = self.file.seek(0, os.SEEK_CUR)
+
+        # Create local file header for directory
+        var filename_bytes = List[UInt8]()
+        for byte in zinfo.filename.as_bytes():
+            filename_bytes.append(byte)
+
+        var local_header = LocalFileHeader(
+            version_needed_to_extract=20,
+            general_purpose_bit_flag=GeneralPurposeBitFlag(
+                strings_are_utf8=True
+            ),
+            compression=ZIP_STORED,  # Directories are always stored
+            last_mod_file_time=0,
+            last_mod_file_date=0,
+            crc32=0,  # Directories have CRC32 of 0
+            compressed_size=0,  # Directories have size 0
+            uncompressed_size=0,  # Directories have size 0
+            filename=filename_bytes,
+            extra_field=List[UInt8](),
+        )
+
+        # Write the local file header
+        _ = local_header.write_to_file(self.file, self.allowZip64)
+
+        # Create central directory entry
+        var central_header = CentralDirectoryFileHeader(
+            local_header, header_offset
+        )
+
+        # Set external attributes for directory (MS-DOS directory attribute)
+        # The external attributes field:
+        # - Lower byte: MS-DOS attributes (0x10 = directory)
+        # - Upper 2 bytes: Unix file permissions
+        central_header.external_file_attributes = (
+            UInt32(zinfo._external_attr) << 16
+        ) | 0x10
+
+        # Add to central directory
+        self.central_directory_files_headers.append(central_header)
+
     fn read(mut self, name: String) raises -> List[UInt8]:
         """Read and return the bytes of a file in the archive."""
         file_reader = self.open(name, "r")
