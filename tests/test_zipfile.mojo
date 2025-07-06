@@ -36,14 +36,14 @@ def test_deflate_compression_ratio():
 
     # Write with ZIP_STORED (no compression)
     stored_file = "/tmp/large_stored.zip"
-    zip_stored = zipfile.ZipFile(stored_file, "w")
-    zip_stored.writestr("large.txt", large_data, zipfile.ZIP_STORED)
+    zip_stored = zipfile.ZipFile(stored_file, "w", zipfile.ZIP_STORED)
+    zip_stored.writestr("large.txt", large_data)
     zip_stored.close()
 
     # Write with ZIP_DEFLATED (compression)
     deflated_file = "/tmp/large_deflated.zip"
-    zip_deflated = zipfile.ZipFile(deflated_file, "w")
-    zip_deflated.writestr("large.txt", large_data, zipfile.ZIP_DEFLATED)
+    zip_deflated = zipfile.ZipFile(deflated_file, "w", zipfile.ZIP_DEFLATED)
+    zip_deflated.writestr("large.txt", large_data)
     zip_deflated.close()
 
     # Read file sizes
@@ -79,10 +79,10 @@ def test_compression_levels():
         file_path = "/tmp/test_level_" + String(level) + ".zip"
 
         # Create zip with specific compression level
-        zip_file = zipfile.ZipFile(file_path, "w")
-        zip_file.writestr(
-            "test.txt", test_data, zipfile.ZIP_DEFLATED, compresslevel=level
+        zip_file = zipfile.ZipFile(
+            file_path, "w", zipfile.ZIP_DEFLATED, compresslevel=level
         )
+        zip_file.writestr("test.txt", test_data)
         zip_file.close()
 
         # Verify content can be read back correctly
@@ -153,12 +153,17 @@ def test_read_method():
     file_path = "/tmp/test_read_method.zip"
 
     # Create a zip file with some test data, both stored and deflated
-    zip_write = zipfile.ZipFile(file_path, "w")
+    zip_write = zipfile.ZipFile(file_path, "w")  # Default is ZIP_STORED
     zip_write.writestr("test1.txt", test_data)  # ZIP_STORED
-    zip_write.writestr(
-        "test2.txt", "Different content", zipfile.ZIP_DEFLATED, compresslevel=6
-    )  # ZIP_DEFLATED
     zip_write.close()
+
+    # Create second file with ZIP_DEFLATED
+    zip_write2 = zipfile.ZipFile(
+        file_path, "w", zipfile.ZIP_DEFLATED, compresslevel=Int32(6)
+    )
+    zip_write2.writestr("test1.txt", test_data)  # Keep same content for test
+    zip_write2.writestr("test2.txt", "Different content")
+    zip_write2.close()
 
     # Test reading the files using the read() method
     zip_read = zipfile.ZipFile(file_path, "r")

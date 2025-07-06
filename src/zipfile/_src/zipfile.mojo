@@ -43,17 +43,26 @@ struct ZipFile:
         Zip64EndOfCentralDirectoryRecord
     ]
     var allowZip64: Bool
+    var compression: UInt16
+    var compresslevel: Optional[Int32]
 
     fn __init__[
         FileNameType: PathLike
     ](
-        out self, filename: FileNameType, mode: String, allowZip64: Bool = True
+        out self,
+        filename: FileNameType,
+        mode: String,
+        compression: UInt16 = ZIP_STORED,
+        allowZip64: Bool = True,
+        compresslevel: Optional[Int32] = None,
     ) raises:
         self.file = open(filename, mode)
         if mode not in String("r", "w"):
             raise Error("Only read and write modes are suported")
         self.mode = mode
         self.allowZip64 = allowZip64
+        self.compression = compression
+        self.compresslevel = compresslevel
         self.central_directory_files_headers = List[
             CentralDirectoryFileHeader
         ]()
@@ -116,6 +125,8 @@ struct ZipFile:
         self.zip64_end_of_central_directory = (
             existing.zip64_end_of_central_directory^
         )
+        self.compression = existing.compression
+        self.compresslevel = existing.compresslevel^
 
     fn __enter__(ref self) -> ref [__origin_of(self)] ZipFile:
         return self
@@ -220,8 +231,8 @@ struct ZipFile:
         if mode != "r":
             raise Error("Only read mode is the only mode supported")
         if (
-            name._compression_method != ZIP_STORED
-            and name._compression_method != ZIP_DEFLATED
+            name._compression != ZIP_STORED
+            and name._compression != ZIP_DEFLATED
         ):
             raise Error(
                 "Only ZIP_STORED and ZIP_DEFLATED compression method is"
@@ -235,7 +246,7 @@ struct ZipFile:
             Pointer(to=self.file),
             name._compressed_size,
             name._uncompressed_size,
-            name._compression_method,
+            name._compression,
             name._crc32.value(),
         )
 
@@ -248,16 +259,12 @@ struct ZipFile:
         mut self,
         name: String,
         mode: String,
-        compression_method: UInt16 = ZIP_STORED,
-        compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
+        *,
         force_zip64: Bool = False,
     ) raises -> ZipFileWriter[__origin_of(self)]:
         if mode != "w":
             raise Error("Only write mode is the only mode supported")
-        if (
-            compression_method != ZIP_STORED
-            and compression_method != ZIP_DEFLATED
-        ):
+        if self.compression != ZIP_STORED and self.compression != ZIP_DEFLATED:
             raise Error(
                 "Only ZIP_STORED and ZIP_DEFLATED compression methods are"
                 " supported"
@@ -266,8 +273,8 @@ struct ZipFile:
             Pointer(to=self),
             name,
             mode,
-            compression_method,
-            compresslevel,
+            self.compression,
+            self.compresslevel.value() if self.compresslevel else -1,
             force_zip64,
         )
 
@@ -275,13 +282,9 @@ struct ZipFile:
         mut self,
         arcname: String,
         data: String,
-        compression_method: UInt16 = ZIP_STORED,
-        compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
     ) raises:
         # Some streaming would be nice here
-        file_handle = self.open_to_write(
-            arcname, "w", compression_method, compresslevel
-        )
+        file_handle = self.open_to_write(arcname, "w")
         file_handle.write(data.as_bytes())
         file_handle.close()
 

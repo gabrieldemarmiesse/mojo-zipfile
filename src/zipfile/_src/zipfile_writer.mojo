@@ -30,7 +30,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         zipfile: Pointer[ZipFile, origin],
         name: String,
         mode: String,
-        compression_method: UInt16,
+        compression: UInt16,
         compresslevel: Int32 = -1,  # Z_DEFAULT_COMPRESSION
         force_zip64: Bool = False,
     ) raises:
@@ -40,7 +40,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
             general_purpose_bit_flag=GeneralPurposeBitFlag(
                 strings_are_utf8=True
             ),
-            compression_method=compression_method,
+            compression=compression,
             last_mod_file_time=0,
             last_mod_file_date=0,
             crc32=0,  # We'll write it when closing
@@ -72,18 +72,18 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
         self.current_crc32 = zlib.crc32(data, self.current_crc32)
         self.uncompressed_size += UInt64(len(data))
 
-        if self.local_file_header.compression_method == ZIP_STORED:
+        if self.local_file_header.compression == ZIP_STORED:
             # For stored (uncompressed), write directly to file
             self.zipfile[].file.write_bytes(data)
             self.compressed_size += UInt64(len(data))
-        elif self.local_file_header.compression_method == ZIP_DEFLATED:
+        elif self.local_file_header.compression == ZIP_DEFLATED:
             # For deflate, accumulate data in buffer for compression on close
             for byte in data:
                 self._uncompressed_buffer.append(byte)
         else:
             raise Error(
                 "Unsupported compression method: "
-                + String(self.local_file_header.compression_method)
+                + String(self.local_file_header.compression)
             )
 
     fn close(mut self) raises:
@@ -94,7 +94,7 @@ struct ZipFileWriter[origin: Origin[mut=True]]:
 
         # Handle compression for deflate method
         if (
-            self.local_file_header.compression_method == ZIP_DEFLATED
+            self.local_file_header.compression == ZIP_DEFLATED
             and len(self._uncompressed_buffer) > 0
         ):
             # Compress the accumulated data using raw deflate format for ZIP files
