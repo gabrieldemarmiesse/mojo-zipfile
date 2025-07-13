@@ -19,12 +19,12 @@ fn test_extract_basic_file() raises:
 
     # Extract the file
     var zip_file2 = ZipFile(zip_path, "r")
-    var extracted_path = zip_file2.extract("hello.txt", extract_dir.__str__())
+    var extracted_path = zip_file2.extract("hello.txt", String(extract_dir))
     zip_file2.close()
 
     # Verify the file was extracted correctly
     var expected_path = extract_dir / "hello.txt"
-    assert_equal(extracted_path, expected_path.__str__())
+    assert_equal(extracted_path, String(expected_path))
     assert_true(Path(extracted_path).exists())
 
     # Verify the content
@@ -52,13 +52,13 @@ fn test_extract_directory() raises:
     # Extract the directory
     var zip_file2 = ZipFile(zip_path, "r")
     var extracted_path = zip_file2.extract(
-        "test_folder/", extract_dir.__str__()
+        "test_folder/", String(extract_dir)
     )
     zip_file2.close()
 
     # Verify the directory was extracted correctly
     var expected_path = extract_dir / "test_folder/"
-    assert_equal(extracted_path, expected_path.__str__())
+    assert_equal(extracted_path, String(expected_path))
     assert_true(Path(extracted_path).is_dir())
 
     # Clean up
@@ -120,13 +120,13 @@ fn test_extract_nested_file() raises:
     # Extract the nested file
     var zip_file2 = ZipFile(zip_path, "r")
     var extracted_path = zip_file2.extract(
-        "parent/child/nested.txt", extract_dir.__str__()
+        "parent/child/nested.txt", String(extract_dir)
     )
     zip_file2.close()
 
     # Verify the file was extracted with proper directory structure
     var expected_path = extract_dir / "parent/child/nested.txt"
-    assert_equal(extracted_path, expected_path.__str__())
+    assert_equal(extracted_path, String(expected_path))
     assert_true(Path(extracted_path).exists())
 
     # Verify the content
@@ -160,7 +160,7 @@ fn test_extract_with_zipinfo() raises:
     # Get ZipInfo and extract using it
     var zip_file2 = ZipFile(zip_path, "r")
     var info = zip_file2.getinfo("zipinfo_test.txt")
-    var extracted_path = zip_file2.extract(info, extract_dir.__str__())
+    var extracted_path = zip_file2.extract(info, String(extract_dir))
     zip_file2.close()
 
     # Verify the file was extracted correctly
