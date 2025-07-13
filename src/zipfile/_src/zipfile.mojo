@@ -306,7 +306,7 @@ struct ZipFile:
     fn mkdir(mut self, zinfo_or_directory: String, mode: UInt16 = 0o777) raises:
         """Create a directory inside the ZIP archive.
 
-        Parameters:
+        Arguments:
             zinfo_or_directory: The directory name to create.
             mode: The Unix file permissions for the directory (default 0o777).
 
@@ -332,7 +332,7 @@ struct ZipFile:
     ) raises:
         """Create a directory inside the ZIP archive using a ZipInfo object.
 
-        Parameters:
+        Arguments:
             zinfo_or_directory: The ZipInfo object for the directory.
             mode: The Unix file permissions (ignored when ZipInfo is provided).
 
@@ -404,7 +404,7 @@ struct ZipFile:
     ) raises -> String:
         """Extract a member from the archive to the file system.
 
-        Parameters:
+        Arguments:
             member: The name of the file to extract.
             path: The directory to extract to (defaults to current directory).
 
@@ -425,7 +425,7 @@ struct ZipFile:
     ) raises -> String:
         """Extract a member from the archive to the file system using ZipInfo.
 
-        Parameters:
+        Arguments:
             member: The ZipInfo object of the file to extract.
             path: The directory to extract to (defaults to current directory).
 
@@ -443,7 +443,7 @@ struct ZipFile:
     fn extractall(mut self, path: Optional[String] = None) raises:
         """Extract all members from the archive to the file system.
 
-        Parameters:
+        Arguments:
             path: The directory to extract to (defaults to current directory).
 
         Raises:
@@ -471,7 +471,7 @@ struct ZipFile:
     ) raises:
         """Extract specified members from the archive to the file system.
 
-        Parameters:
+        Arguments:
             path: The directory to extract to (defaults to current directory).
             members: List of member names to extract.
 
@@ -498,7 +498,7 @@ struct ZipFile:
     ) raises:
         """Extract specified members from the archive to the file system using ZipInfo objects.
 
-        Parameters:
+        Arguments:
             path: The directory to extract to (defaults to current directory).
             members: List of ZipInfo objects to extract.
 
