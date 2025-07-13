@@ -13,7 +13,7 @@ fn test_extractall_to_custom_path() raises:
     var extract_dir = Path(temp_dir) / "extract"
 
     # Create a zip file with multiple files
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.writestr("file1.txt", "Content of file 1")
     zip_file.writestr("file2.txt", "Content of file 2")
     zip_file.mkdir("folder/")
@@ -21,8 +21,8 @@ fn test_extractall_to_custom_path() raises:
     zip_file.close()
 
     # Extract all files
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
-    zip_file2.extractall(extract_dir.__str__())
+    var zip_file2 = ZipFile(zip_path, "r")
+    zip_file2.extractall(String(extract_dir))
     zip_file2.close()
 
     # Verify all files were extracted
@@ -39,12 +39,12 @@ fn test_extractall_to_custom_path() raises:
     )
 
     # Clean up
-    os.remove((extract_dir / "file1.txt").__str__())
-    os.remove((extract_dir / "file2.txt").__str__())
-    os.remove((extract_dir / "folder/file3.txt").__str__())
-    os.rmdir((extract_dir / "folder/").__str__())
-    os.rmdir(extract_dir.__str__())
-    os.remove(zip_path.__str__())
+    os.remove((extract_dir / "file1.txt"))
+    os.remove((extract_dir / "file2.txt"))
+    os.remove((extract_dir / "folder/file3.txt"))
+    os.rmdir((extract_dir / "folder/"))
+    os.rmdir(extract_dir)
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -55,18 +55,18 @@ fn test_extractall_with_members_list() raises:
     var extract_dir = Path(temp_dir) / "extract"
 
     # Create a zip file with multiple files
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.writestr("file1.txt", "Content of file 1")
     zip_file.writestr("file2.txt", "Content of file 2")
     zip_file.writestr("file3.txt", "Content of file 3")
     zip_file.close()
 
     # Extract only specific files
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
+    var zip_file2 = ZipFile(zip_path, "r")
     var members_to_extract = List[String]()
     members_to_extract.append("file1.txt")
     members_to_extract.append("file3.txt")
-    zip_file2.extractall(extract_dir.__str__(), members_to_extract)
+    zip_file2.extractall(String(extract_dir), members_to_extract)
     zip_file2.close()
 
     # Verify only specified files were extracted
@@ -81,10 +81,10 @@ fn test_extractall_with_members_list() raises:
     assert_equal((extract_dir / "file3.txt").read_text(), "Content of file 3")
 
     # Clean up
-    os.remove((extract_dir / "file1.txt").__str__())
-    os.remove((extract_dir / "file3.txt").__str__())
-    os.rmdir(extract_dir.__str__())
-    os.remove(zip_path.__str__())
+    os.remove((extract_dir / "file1.txt"))
+    os.remove((extract_dir / "file3.txt"))
+    os.rmdir(extract_dir)
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -95,20 +95,20 @@ fn test_extractall_empty_archive() raises:
     var extract_dir = Path(temp_dir) / "extract"
 
     # Create an empty zip file
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.close()
 
     # Extract from empty archive (should not fail)
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
-    zip_file2.extractall(extract_dir.__str__())
+    var zip_file2 = ZipFile(zip_path, "r")
+    zip_file2.extractall(String(extract_dir))
     zip_file2.close()
 
     # Extract directory should be created but empty
     assert_true(extract_dir.is_dir())
 
     # Clean up
-    os.rmdir(extract_dir.__str__())
-    os.remove(zip_path.__str__())
+    os.rmdir(extract_dir)
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -118,13 +118,13 @@ fn test_extractall_write_mode() raises:
     var zip_path = Path(temp_dir) / "test_write_mode.zip"
 
     # Open archive in write mode and try to extractall
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     with assert_raises(contains="extractall() requires mode 'r'"):
         zip_file.extractall()
     zip_file.close()
 
     # Clean up
-    os.remove(zip_path.__str__())
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -135,7 +135,7 @@ fn test_extractall_with_zipinfo_objects() raises:
     var extract_dir = Path(temp_dir) / "extract"
 
     # Create a zip file with multiple files
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.writestr("file1.txt", "Content of file 1")
     zip_file.writestr("file2.txt", "Content of file 2")
     zip_file.mkdir("folder/")
@@ -143,12 +143,12 @@ fn test_extractall_with_zipinfo_objects() raises:
     zip_file.close()
 
     # Get specific ZipInfo objects and extract them
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
+    var zip_file2 = ZipFile(zip_path, "r")
     var members_to_extract = List[ZipInfo]()
     members_to_extract.append(zip_file2.getinfo("file1.txt"))
     members_to_extract.append(zip_file2.getinfo("folder/"))
     members_to_extract.append(zip_file2.getinfo("folder/file3.txt"))
-    zip_file2.extractall(extract_dir.__str__(), members_to_extract)
+    zip_file2.extractall(String(extract_dir), members_to_extract)
     zip_file2.close()
 
     # Verify only specified files were extracted
@@ -166,11 +166,11 @@ fn test_extractall_with_zipinfo_objects() raises:
     )
 
     # Clean up
-    os.remove((extract_dir / "file1.txt").__str__())
-    os.remove((extract_dir / "folder/file3.txt").__str__())
-    os.rmdir((extract_dir / "folder/").__str__())
-    os.rmdir(extract_dir.__str__())
-    os.remove(zip_path.__str__())
+    os.remove((extract_dir / "file1.txt"))
+    os.remove((extract_dir / "folder/file3.txt"))
+    os.rmdir((extract_dir / "folder/"))
+    os.rmdir(extract_dir)
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
