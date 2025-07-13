@@ -51,9 +51,7 @@ fn test_extract_directory() raises:
 
     # Extract the directory
     var zip_file2 = ZipFile(zip_path, "r")
-    var extracted_path = zip_file2.extract(
-        "test_folder/", String(extract_dir)
-    )
+    var extracted_path = zip_file2.extract("test_folder/", String(extract_dir))
     zip_file2.close()
 
     # Verify the directory was extracted correctly
