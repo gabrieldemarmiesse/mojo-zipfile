@@ -13,12 +13,12 @@ fn test_extract_basic_file() raises:
     var extract_dir = Path(temp_dir) / "extract"
 
     # Create a zip file with a simple text file
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.writestr("hello.txt", "Hello, World!")
     zip_file.close()
 
     # Extract the file
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
+    var zip_file2 = ZipFile(zip_path, "r")
     var extracted_path = zip_file2.extract("hello.txt", extract_dir.__str__())
     zip_file2.close()
 
