@@ -33,8 +33,8 @@ fn test_extract_basic_file() raises:
 
     # Clean up
     os.remove(extracted_path)
-    os.rmdir(extract_dir.__str__())
-    os.remove(zip_path.__str__())
+    os.rmdir(extract_dir)
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -45,12 +45,12 @@ fn test_extract_directory() raises:
     var extract_dir = Path(temp_dir) / "extract"
 
     # Create a zip file with a directory
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.mkdir("test_folder")
     zip_file.close()
 
     # Extract the directory
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
+    var zip_file2 = ZipFile(zip_path, "r")
     var extracted_path = zip_file2.extract(
         "test_folder/", extract_dir.__str__()
     )
@@ -63,8 +63,8 @@ fn test_extract_directory() raises:
 
     # Clean up
     os.rmdir(extracted_path)
-    os.rmdir(extract_dir.__str__())
-    os.remove(zip_path.__str__())
+    os.rmdir(extract_dir)
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -74,17 +74,17 @@ fn test_extract_nonexistent_file() raises:
     var zip_path = Path(temp_dir) / "test_nonexistent.zip"
 
     # Create an empty zip file
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.close()
 
     # Try to extract a non-existent file
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
+    var zip_file2 = ZipFile(zip_path, "r")
     with assert_raises(contains="not found in zip file"):
         _ = zip_file2.extract("nonexistent.txt")
     zip_file2.close()
 
     # Clean up
-    os.remove(zip_path.__str__())
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -94,13 +94,13 @@ fn test_extract_from_write_mode() raises:
     var zip_path = Path(temp_dir) / "test_write_mode.zip"
 
     # Open archive in write mode and try to extract
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     with assert_raises(contains="extract() requires mode 'r'"):
         _ = zip_file.extract("any_file.txt")
     zip_file.close()
 
     # Clean up
-    os.remove(zip_path.__str__())
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -111,14 +111,14 @@ fn test_extract_nested_file() raises:
     var extract_dir = Path(temp_dir) / "extract"
 
     # Create a zip file with nested directory structure
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.mkdir("parent/")
     zip_file.mkdir("parent/child/")
     zip_file.writestr("parent/child/nested.txt", "Nested file content!")
     zip_file.close()
 
     # Extract the nested file
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
+    var zip_file2 = ZipFile(zip_path, "r")
     var extracted_path = zip_file2.extract(
         "parent/child/nested.txt", extract_dir.__str__()
     )
@@ -139,10 +139,10 @@ fn test_extract_nested_file() raises:
 
     # Clean up
     os.remove(extracted_path)
-    os.rmdir((extract_dir / "parent/child").__str__())
-    os.rmdir((extract_dir / "parent").__str__())
-    os.rmdir(extract_dir.__str__())
-    os.remove(zip_path.__str__())
+    os.rmdir((extract_dir / "parent/child"))
+    os.rmdir((extract_dir / "parent"))
+    os.rmdir(extract_dir)
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
@@ -153,19 +153,19 @@ fn test_extract_with_zipinfo() raises:
     var extract_dir = Path(temp_dir) / "extract"
 
     # Create a zip file with a simple text file
-    var zip_file = ZipFile(zip_path.__str__(), "w")
+    var zip_file = ZipFile(zip_path, "w")
     zip_file.writestr("zipinfo_test.txt", "ZipInfo extraction test!")
     zip_file.close()
 
     # Get ZipInfo and extract using it
-    var zip_file2 = ZipFile(zip_path.__str__(), "r")
+    var zip_file2 = ZipFile(zip_path, "r")
     var info = zip_file2.getinfo("zipinfo_test.txt")
     var extracted_path = zip_file2.extract(info, extract_dir.__str__())
     zip_file2.close()
 
     # Verify the file was extracted correctly
     var expected_path = extract_dir / "zipinfo_test.txt"
-    assert_equal(extracted_path, expected_path.__str__())
+    assert_equal(extracted_path, String(expected_path))
     assert_true(Path(extracted_path).exists())
 
     # Verify the content
@@ -174,8 +174,8 @@ fn test_extract_with_zipinfo() raises:
 
     # Clean up
     os.remove(extracted_path)
-    os.rmdir(extract_dir.__str__())
-    os.remove(zip_path.__str__())
+    os.rmdir(extract_dir)
+    os.remove(zip_path)
     os.rmdir(temp_dir)
 
 
