@@ -1,5 +1,5 @@
 from os import PathLike
-from builtin.file import FileHandle
+from io import FileHandle
 import os
 from .utils import _lists_are_equal
 from .metadata import (

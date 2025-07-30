@@ -1,4 +1,4 @@
-from builtin.file import FileHandle
+from io import FileHandle
 import os
 from .metadata import ZIP_STORED, ZIP_DEFLATED
 import zlib
