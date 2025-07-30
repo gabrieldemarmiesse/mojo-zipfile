@@ -603,7 +603,7 @@ struct ZipFile:
         for i in range(len(parts)):
             var part = parts[i]
             if part != String("..") and part != String("."):
-                safe_parts.append(part)
+                safe_parts.append(String(part))
 
         # Join the parts back together
         var result = ""
