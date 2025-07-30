@@ -571,7 +571,7 @@ struct ZipFile:
         # Remove the last part (filename) and join the rest
         var parent_parts = List[String]()
         for i in range(len(parts) - 1):
-            parent_parts.append(parts[i])
+            parent_parts.append(String(parts[i]))
 
         var result = ""
         for i in range(len(parent_parts)):
@@ -602,7 +602,7 @@ struct ZipFile:
         var safe_parts = List[String]()
         for i in range(len(parts)):
             var part = parts[i]
-            if part != ".." and part != ".":
+            if part != String("..") and part != String("."):
                 safe_parts.append(part)
 
         # Join the parts back together
