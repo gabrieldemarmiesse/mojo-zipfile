@@ -27,7 +27,7 @@ struct ZipInfo(Copyable, Movable):
     fn _create_directory(dirname: String, mode: UInt16) raises -> ZipInfo:
         """Create a ZipInfo object for a directory.
 
-        Parameters:
+        Arguments:
             dirname: The directory name (should end with '/').
             mode: Unix file permissions for the directory.
 
