@@ -1,5 +1,5 @@
 from os import abort
-from builtin.file import FileHandle
+from io import FileHandle
 import os
 from .metadata import (
     LocalFileHeader,

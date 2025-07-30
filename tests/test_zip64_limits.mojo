@@ -10,7 +10,7 @@ from zipfile._src.metadata import (
     ZIP_STORED,
 )
 from zipfile._src.read_write_values import write_zip_value
-from builtin.file import FileHandle
+from io import FileHandle
 
 
 def test_zip64_file_size_limit_local_header():
