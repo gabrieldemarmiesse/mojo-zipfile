@@ -28,9 +28,9 @@ mojo-zipfile provides a Mojo-native implementation for reading and writing ZIP a
 
 Currently implemented features:
 - Reading ZIP archives (`ZipFile` with mode='r')
-- Writing ZIP archives (`ZipFile` with mode='w', 'a', 'x')
-- Extracting individual files (`extract()`, `extractall()`)
-- Adding files from memory (`writestr()`)
+- Writing ZIP archives (`ZipFile` with mode='w')
+- Extracting individual files to disk (`extract()`, `extractall()`)
+- Adding text files from strings (`writestr()`)
 - Listing archive contents (`namelist()`, `infolist()`)
 - File metadata access (`getinfo()`, `ZipInfo`)
 
@@ -66,9 +66,6 @@ fn main() raises:
     with ZipFile("example.zip", "w") as zip_file:
         # Add a file with deflate compression
         zip_file.writestr("hello.txt", "Hello, World!", ZIP_DEFLATED)
-        
-        # Add a file without compression
-        zip_file.writestr("data.bin", "Binary data here", ZIP_STORED)
     
     # Read from a ZIP file
     with ZipFile("example.zip", "r") as zip_file:
@@ -326,14 +323,11 @@ fn create_large_archive() raises:
 
 ## Performance
 
-mojo-zipfile leverages Mojo's performance capabilities while maintaining compatibility with Python's zipfile API. The library uses:
-
-- **Native Mojo types** for optimal memory layout
-- **Streaming operations** to handle large files efficiently
-- **Direct zlib integration** via mojo-zlib for fast compression/decompression
-- **Minimal allocations** through careful buffer management
-
-For compression operations, performance is largely determined by the underlying zlib implementation.
+Note that the library is not optimized for performance yet. 
+It is designed to be a faithful implementation of the 
+Python `zipfile` module, prioritizing compatibility and correctness 
+over speed. Future versions may include performance improvements, 
+we are notably waiting for the Mojo standard library to mature.
 
 ## License
 
